@@ -11,10 +11,15 @@ This project provides a simple web interface to browse a collection of datasets.
 - Browse datasets in an interactive grid
 - Search and filter functionality
 - View detailed dataset information
+- Analytics dashboard with visualizations
 
 ## How to access
 
 A public version of this site is available at https://nlp4se.github.io/LLM4RE-Datasets/
+
+## Development
+
+**Disclaimer**: The source code for this web application has been generated with the assistance of AI tools, specifically using Claude (Anthropic) for code generation and implementation assistance.
 
 ## License
 
@@ -22,4 +27,6 @@ See LICENSE file for details.
 
 ## Contact
 
+Quim Motger
+joaquim.motger (at) upc (dot) edu
 GESSI Research Group, Universitat Politècnica de Catalunya (UPC)

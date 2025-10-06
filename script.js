@@ -163,8 +163,16 @@ function setupEventListeners() {
     // Navigation links
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault();
+            // Skip external links entirely
+            if (link.classList.contains('external-link')) {
+                return; // Allow default navigation behavior
+            }
+            
             const view = link.dataset.view;
+            
+            // Prevent default only for internal navigation
+            e.preventDefault();
+            
             if (view === 'listing') {
                 showListingView();
             }
