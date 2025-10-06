@@ -1,0 +1,670 @@
+// Global state
+let datasets = [];
+let publications = [];
+let filteredDatasets = [];
+let currentView = 'listing';
+let currentDataset = null;
+
+// DOM elements
+const elements = {
+    listingView: document.getElementById('listing-view'),
+    detailView: document.getElementById('detail-view'),
+    datasetGrid: document.getElementById('dataset-grid'),
+    detailContent: document.getElementById('detail-content'),
+    detailTitle: document.getElementById('detail-title'),
+    datasetCount: document.getElementById('dataset-count'),
+    resultsCount: document.getElementById('results-count'),
+    totalCount: document.getElementById('total-count'),
+    searchInput: document.getElementById('search-input'),
+    sortSelect: document.getElementById('sort-select'),
+    sortDirection: document.getElementById('sort-direction'),
+    clearFilters: document.getElementById('clear-filters'),
+    backBtn: document.getElementById('back-btn'),
+    filters: {
+        license: document.getElementById('license-filter'),
+        artifact: document.getElementById('artifact-filter'),
+        granularity: document.getElementById('granularity-filter'),
+        stage: document.getElementById('stage-filter'),
+        task: document.getElementById('task-filter'),
+        domain: document.getElementById('domain-filter'),
+        language: document.getElementById('language-filter'),
+        year: document.getElementById('year-filter')
+    }
+};
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await loadData();
+        setupEventListeners();
+        populateFilters();
+        renderDatasets();
+        updateCounts();
+    } catch (error) {
+        console.error('Error initializing application:', error);
+        showError('Failed to load data. Please refresh the page.');
+    }
+});
+
+// Load data from CSV files
+async function loadData() {
+    try {
+        // Load datasets
+        const datasetsResponse = await fetch('data/datasets - datasets.csv');
+        const datasetsText = await datasetsResponse.text();
+        datasets = parseCSV(datasetsText);
+        
+        // Load publications
+        const publicationsResponse = await fetch('data/publications - selection.csv');
+        const publicationsText = await publicationsResponse.text();
+        publications = parseCSV(publicationsText);
+        
+        // Initialize filtered datasets
+        filteredDatasets = [...datasets];
+        
+        console.log(`Loaded ${datasets.length} datasets and ${publications.length} publications`);
+    } catch (error) {
+        console.error('Error loading data:', error);
+        throw error;
+    }
+}
+
+// Parse CSV data
+function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    
+    return lines.slice(1).map(line => {
+        const values = parseCSVLine(line);
+        const obj = {};
+        headers.forEach((header, index) => {
+            obj[header] = values[index] || '';
+        });
+        return obj;
+    });
+}
+
+// Parse a single CSV line handling quoted values
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    
+    result.push(current.trim());
+    return result;
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    // Search input
+    elements.searchInput.addEventListener('input', debounce(handleSearch, 300));
+    
+    // Filter selects
+    Object.values(elements.filters).forEach(filter => {
+        filter.addEventListener('change', handleFilterChange);
+    });
+    
+    // Sort controls
+    elements.sortSelect.addEventListener('change', handleSort);
+    elements.sortDirection.addEventListener('click', toggleSortDirection);
+    
+    // Clear filters
+    elements.clearFilters.addEventListener('click', clearAllFilters);
+    
+    // Back button
+    elements.backBtn.addEventListener('click', showListingView);
+    
+    // Navigation links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const view = link.dataset.view;
+            if (view === 'listing') {
+                showListingView();
+            }
+        });
+    });
+    
+    // Dataset grid clicks
+    elements.datasetGrid.addEventListener('click', handleDatasetClick);
+}
+
+// Debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Handle search input
+function handleSearch() {
+    const query = elements.searchInput.value.toLowerCase().trim();
+    applyFilters();
+}
+
+// Handle filter changes
+function handleFilterChange() {
+    applyFilters();
+}
+
+// Apply all filters and search
+function applyFilters() {
+    const searchQuery = elements.searchInput.value.toLowerCase().trim();
+    
+    filteredDatasets = datasets.filter(dataset => {
+        // Search filter
+        if (searchQuery) {
+            const searchableText = [
+                dataset.Name,
+                dataset.Description,
+                dataset.Domain,
+                dataset.Task,
+                dataset.Labels
+            ].join(' ').toLowerCase();
+            
+            if (!searchableText.includes(searchQuery)) {
+                return false;
+            }
+        }
+        
+        // Property filters
+        const filters = {
+            License: elements.filters.license.value,
+            'Artifact type': elements.filters.artifact.value,
+            Granularity: elements.filters.granularity.value,
+            'RE stage': elements.filters.stage.value,
+            Task: elements.filters.task.value,
+            Domain: elements.filters.domain.value,
+            Languages: elements.filters.language.value,
+            Year: elements.filters.year.value
+        };
+        
+        for (const [key, value] of Object.entries(filters)) {
+            if (value && dataset[key] !== value) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    handleSort();
+    renderDatasets();
+    updateCounts();
+}
+
+// Handle sorting
+function handleSort() {
+    const sortBy = elements.sortSelect.value;
+    const direction = elements.sortDirection.dataset.direction;
+    
+    // Map sort options to CSV column names
+    let csvColumn;
+    switch(sortBy) {
+        case 'name':
+            csvColumn = 'Name';
+            break;
+        case 'size':
+            csvColumn = 'Size';
+            break;
+        case 'domain':
+            csvColumn = 'Domain';
+            break;
+        case 'year':
+            csvColumn = 'Year';
+            break;
+        default:
+            csvColumn = 'Name';
+    }
+    
+    filteredDatasets.sort((a, b) => {
+        let aVal = a[csvColumn] || '';
+        let bVal = b[csvColumn] || '';
+        
+        // Handle numeric sorting for size and year
+        if (sortBy === 'size' || sortBy === 'year') {
+            aVal = parseInt(aVal) || 0;
+            bVal = parseInt(bVal) || 0;
+        }
+        
+        // Handle string comparison
+        if (typeof aVal === 'string') {
+            aVal = aVal.toLowerCase();
+            bVal = bVal.toLowerCase();
+        }
+        
+        if (direction === 'asc') {
+            return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+        } else {
+            return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+        }
+    });
+    
+    renderDatasets();
+}
+
+
+// Toggle sort direction
+function toggleSortDirection() {
+    const currentDirection = elements.sortDirection.dataset.direction;
+    const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+    
+    elements.sortDirection.dataset.direction = newDirection;
+    elements.sortDirection.innerHTML = newDirection === 'asc' 
+        ? '<i class="fas fa-sort-amount-up"></i>'
+        : '<i class="fas fa-sort-amount-down"></i>';
+    
+    handleSort();
+}
+
+// Clear all filters
+function clearAllFilters() {
+    elements.searchInput.value = '';
+    Object.values(elements.filters).forEach(filter => {
+        filter.value = '';
+    });
+    elements.sortSelect.value = 'name';
+    elements.sortDirection.dataset.direction = 'asc';
+    elements.sortDirection.innerHTML = '<i class="fas fa-sort-amount-up"></i>';
+    
+    applyFilters();
+}
+
+// Populate filter options
+function populateFilters() {
+    const filterOptions = {
+        License: new Set(),
+        'Artifact type': new Set(),
+        Granularity: new Set(),
+        'RE stage': new Set(),
+        Task: new Set(),
+        Domain: new Set(),
+        Languages: new Set(),
+        Year: new Set()
+    };
+    
+    // Collect unique values
+    datasets.forEach(dataset => {
+        Object.keys(filterOptions).forEach(key => {
+            if (dataset[key] && dataset[key].trim()) {
+                filterOptions[key].add(dataset[key].trim());
+            }
+        });
+    });
+    
+    // Populate filter selects
+    Object.entries(filterOptions).forEach(([key, values]) => {
+        let filterElement;
+        
+        // Map CSV column names to HTML element IDs
+        switch(key) {
+            case 'License':
+                filterElement = elements.filters.license;
+                break;
+            case 'Artifact type':
+                filterElement = elements.filters.artifact;
+                break;
+            case 'Granularity':
+                filterElement = elements.filters.granularity;
+                break;
+            case 'RE stage':
+                filterElement = elements.filters.stage;
+                break;
+            case 'Task':
+                filterElement = elements.filters.task;
+                break;
+            case 'Domain':
+                filterElement = elements.filters.domain;
+                break;
+            case 'Languages':
+                filterElement = elements.filters.language;
+                break;
+            case 'Year':
+                filterElement = elements.filters.year;
+                break;
+        }
+        
+        if (filterElement) {
+            const sortedValues = Array.from(values).sort();
+            sortedValues.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                filterElement.appendChild(option);
+            });
+        }
+    });
+}
+
+// Render datasets grid
+function renderDatasets() {
+    if (filteredDatasets.length === 0) {
+        elements.datasetGrid.innerHTML = `
+            <div class="no-results">
+                <i class="fas fa-search"></i>
+                <h3>No datasets found</h3>
+                <p>Try adjusting your filters or search terms.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    elements.datasetGrid.innerHTML = filteredDatasets.map(dataset => createDatasetCard(dataset)).join('');
+}
+
+// Create dataset card HTML
+function createDatasetCard(dataset) {
+    const labels = parseLabels(dataset.Labels);
+    const extendsLinks = parseExtends(dataset.Extends);
+    
+    return `
+        <div class="dataset-card" data-code="${dataset.Code}">
+            <div class="dataset-header">
+                <span class="dataset-code">${dataset.Code}</span>
+                <div class="dataset-meta-header">
+                    ${dataset.Year ? `<span class="dataset-year">${dataset.Year}</span>` : ''}
+                    ${dataset.Size ? `<span class="dataset-size">${dataset.Size} items</span>` : ''}
+                </div>
+            </div>
+            
+            <h3 class="dataset-title">${dataset.Name}</h3>
+            
+            <p class="dataset-description">${dataset.Description || 'No description available.'}</p>
+            
+            <div class="dataset-meta">
+                ${dataset.License ? `<span class="meta-tag license"><i class="fas fa-certificate"></i> ${dataset.License}</span>` : ''}
+                ${dataset.Domain ? `<span class="meta-tag domain"><i class="fas fa-globe"></i> ${dataset.Domain}</span>` : ''}
+                ${dataset.Task ? `<span class="meta-tag task"><i class="fas fa-tasks"></i> ${dataset.Task}</span>` : ''}
+                ${dataset['Artifact type'] ? `<span class="meta-tag artifact"><i class="fas fa-file-alt"></i> ${dataset['Artifact type']}</span>` : ''}
+                ${dataset.Granularity ? `<span class="meta-tag granularity"><i class="fas fa-layer-group"></i> ${dataset.Granularity}</span>` : ''}
+                ${dataset['RE stage'] ? `<span class="meta-tag stage"><i class="fas fa-cogs"></i> ${dataset['RE stage']}</span>` : ''}
+            </div>
+            
+            ${labels.length > 0 ? `
+                <div class="dataset-labels">
+                    <div class="labels-title">Labels:</div>
+                    <div class="label-group">
+                        ${labels.map(label => `<span class="label">${label}</span>`).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            
+            ${extendsLinks.length > 0 ? `
+                <div class="extends-section">
+                    <div class="labels-title">Extends:</div>
+                    <div class="label-group">
+                        ${extendsLinks.map(link => `<span class="label extends-link" data-code="${link}">${link}</span>`).join('')}
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+// Parse labels from the Labels column
+function parseLabels(labelsString) {
+    if (!labelsString || labelsString.trim() === '' || labelsString === '-') {
+        return [];
+    }
+    
+    // Split by semicolon first, then by comma
+    return labelsString.split(';').flatMap(group => 
+        group.split(',').map(label => label.trim()).filter(label => label)
+    );
+}
+
+// Parse extends from the Extends column
+function parseExtends(extendsString) {
+    if (!extendsString || extendsString.trim() === '' || extendsString === '-') {
+        return [];
+    }
+    
+    return extendsString.split(',').map(code => code.trim()).filter(code => code);
+}
+
+// Handle dataset card clicks
+function handleDatasetClick(event) {
+    const card = event.target.closest('.dataset-card');
+    if (!card) return;
+    
+    const datasetCode = card.dataset.code;
+    const dataset = datasets.find(d => d.Code === datasetCode);
+    
+    if (dataset) {
+        showDatasetDetail(dataset);
+    }
+}
+
+// Show dataset detail view
+function showDatasetDetail(dataset) {
+    currentDataset = dataset;
+    currentView = 'detail';
+    
+    elements.listingView.classList.remove('active');
+    elements.detailView.classList.add('active');
+    
+    elements.detailTitle.textContent = dataset.Name;
+    elements.detailContent.innerHTML = createDatasetDetail(dataset);
+}
+
+// Create dataset detail HTML
+function createDatasetDetail(dataset) {
+    const labels = parseLabels(dataset.Labels);
+    const extendsLinks = parseExtends(dataset.Extends);
+    const publicationIds = dataset.Publications ? dataset.Publications.split(',').map(id => id.trim()) : [];
+    const relatedPublications = publications.filter(pub => publicationIds.includes(pub.ID));
+    
+    return `
+        <div class="detail-section">
+            <h3>Basic Information</h3>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-label">Code</div>
+                    <div class="detail-value">${dataset.Code}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Name</div>
+                    <div class="detail-value">${dataset.Name}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Year</div>
+                    <div class="detail-value">${dataset.Year || 'Not specified'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Size</div>
+                    <div class="detail-value">${dataset.Size || 'Not specified'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">License</div>
+                    <div class="detail-value">${dataset.License || 'Not specified'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Artifact Type</div>
+                    <div class="detail-value">${dataset['Artifact type'] || 'Not specified'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Granularity</div>
+                    <div class="detail-value">${dataset.Granularity || 'Not specified'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">RE Stage</div>
+                    <div class="detail-value">${dataset['RE stage'] || 'Not specified'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Task</div>
+                    <div class="detail-value">${dataset.Task || 'Not specified'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Domain</div>
+                    <div class="detail-value">${dataset.Domain || 'Not specified'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Languages</div>
+                    <div class="detail-value">${dataset.Languages || 'Not specified'}</div>
+                </div>
+            </div>
+        </div>
+        
+        ${dataset.Description ? `
+            <div class="detail-section">
+                <h3>Description</h3>
+                <div class="detail-description">${dataset.Description}</div>
+            </div>
+        ` : ''}
+        
+        ${dataset.URL ? `
+            <div class="detail-section">
+                <h3>Access</h3>
+                <div class="detail-item">
+                    <div class="detail-label">URL</div>
+                    <div class="detail-value">
+                        <a href="${dataset.URL}" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-external-link-alt"></i> ${dataset.URL}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        ` : ''}
+        
+        ${labels.length > 0 ? `
+            <div class="detail-section">
+                <h3>Labels</h3>
+                <div class="label-group">
+                    ${labels.map(label => `<span class="label">${label}</span>`).join('')}
+                </div>
+            </div>
+        ` : ''}
+        
+        ${extendsLinks.length > 0 ? `
+            <div class="detail-section">
+                <h3>Extends</h3>
+                <div class="label-group">
+                    ${extendsLinks.map(code => `
+                        <a href="#" class="extends-link" data-code="${code}">
+                            <i class="fas fa-link"></i> ${code}
+                        </a>
+                    `).join('')}
+                </div>
+            </div>
+        ` : ''}
+        
+        ${relatedPublications.length > 0 ? `
+            <div class="detail-section">
+                <h3>Related Publications</h3>
+                <ul class="publications-list">
+                    ${relatedPublications.map(pub => `
+                        <li>
+                            <div class="publication-title">${pub.Title}</div>
+                            <div class="publication-authors">${pub.Authors}</div>
+                            <div class="publication-meta">
+                                <span><i class="fas fa-calendar"></i> ${pub.Year}</span>
+                                <span><i class="fas fa-book"></i> ${pub['Source title']}</span>
+                                ${pub.DOI ? `<span><i class="fas fa-link"></i> <a href="https://doi.org/${pub.DOI}" target="_blank">DOI</a></span>` : ''}
+                            </div>
+                            ${pub.Abstract ? `<div class="publication-abstract">${pub.Abstract.substring(0, 200)}...</div>` : ''}
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        ` : ''}
+        
+        ${dataset.Reference ? `
+            <div class="detail-section">
+                <h3>Reference</h3>
+                <div class="detail-description">${dataset.Reference}</div>
+            </div>
+        ` : ''}
+    `;
+}
+
+// Show listing view
+function showListingView() {
+    currentView = 'listing';
+    currentDataset = null;
+    
+    elements.detailView.classList.remove('active');
+    elements.listingView.classList.add('active');
+}
+
+// Update counts
+function updateCounts() {
+    elements.datasetCount.textContent = datasets.length;
+    elements.resultsCount.textContent = filteredDatasets.length;
+    elements.totalCount.textContent = datasets.length;
+}
+
+// Show error message
+function showError(message) {
+    elements.datasetGrid.innerHTML = `
+        <div class="error-message">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Error</h3>
+            <p>${message}</p>
+        </div>
+    `;
+}
+
+// Handle extends link clicks in detail view
+document.addEventListener('click', (event) => {
+    if (event.target.closest('.extends-link')) {
+        event.preventDefault();
+        const code = event.target.closest('.extends-link').dataset.code;
+        const dataset = datasets.find(d => d.Code === code);
+        
+        if (dataset) {
+            showDatasetDetail(dataset);
+        }
+    }
+});
+
+// Add some CSS for error and no-results states
+const additionalStyles = `
+    .no-results, .error-message {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+    }
+    
+    .no-results i, .error-message i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #ccc;
+    }
+    
+    .no-results h3, .error-message h3 {
+        margin-bottom: 1rem;
+        color: #2c3e50;
+    }
+    
+    .publication-abstract {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: #666;
+        font-style: italic;
+    }
+`;
+
+// Add the additional styles to the page
+const styleSheet = document.createElement('style');
+styleSheet.textContent = additionalStyles;
+document.head.appendChild(styleSheet);
