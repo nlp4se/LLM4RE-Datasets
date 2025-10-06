@@ -5,6 +5,37 @@ let filteredDatasets = [];
 let currentView = 'listing';
 let currentDataset = null;
 
+// Language code mapping
+const languageMapping = {
+    'en': 'English',
+    'chn': 'Chinese',
+    'zh': 'Chinese',
+    'zh-cn': 'Chinese (Simplified)',
+    'zh-tw': 'Chinese (Traditional)',
+    'es': 'Spanish',
+    'fr': 'French',
+    'de': 'German',
+    'it': 'Italian',
+    'pt': 'Portuguese',
+    'ru': 'Russian',
+    'ja': 'Japanese',
+    'ko': 'Korean',
+    'ar': 'Arabic',
+    'hi': 'Hindi',
+    'nl': 'Dutch',
+    'sv': 'Swedish',
+    'da': 'Danish',
+    'no': 'Norwegian',
+    'fi': 'Finnish',
+    'pl': 'Polish',
+    'tr': 'Turkish',
+    'he': 'Hebrew',
+    'th': 'Thai',
+    'vi': 'Vietnamese',
+    'multiple': 'Multiple Languages',
+    'multilingual': 'Multilingual'
+};
+
 // DOM elements
 const elements = {
     listingView: document.getElementById('listing-view'),
@@ -114,7 +145,9 @@ function setupEventListeners() {
     
     // Filter selects
     Object.values(elements.filters).forEach(filter => {
-        filter.addEventListener('change', handleFilterChange);
+        if (filter) {
+            filter.addEventListener('change', handleFilterChange);
+        }
     });
     
     // Sort controls
@@ -199,7 +232,7 @@ function applyFilters() {
         };
         
         for (const [key, value] of Object.entries(filters)) {
-            if (value && dataset[key] !== value) {
+            if (value && value.trim() !== '' && dataset[key] !== value) {
                 return false;
             }
         }
@@ -280,7 +313,9 @@ function toggleSortDirection() {
 function clearAllFilters() {
     elements.searchInput.value = '';
     Object.values(elements.filters).forEach(filter => {
-        filter.value = '';
+        if (filter) {
+            filter.value = '';
+        }
     });
     elements.sortSelect.value = 'name';
     elements.sortDirection.dataset.direction = 'asc';
@@ -348,7 +383,12 @@ function populateFilters() {
             sortedValues.forEach(value => {
                 const option = document.createElement('option');
                 option.value = value;
-                option.textContent = value;
+                // For language filter, show full language name
+                if (key === 'Languages') {
+                    option.textContent = getLanguageName(value);
+                } else {
+                    option.textContent = value;
+                }
                 filterElement.appendChild(option);
             });
         }
@@ -381,6 +421,7 @@ function createDatasetCard(dataset) {
             <div class="dataset-header">
                 <span class="dataset-code">${dataset.Code}</span>
                 <div class="dataset-meta-header">
+                    ${dataset.Languages ? `<span class="dataset-language"><i class="fas fa-language"></i> ${getLanguageName(dataset.Languages)}</span>` : ''}
                     ${dataset.Year ? `<span class="dataset-year">${dataset.Year}</span>` : ''}
                     ${dataset.Size ? `<span class="dataset-size">${dataset.Size} items</span>` : ''}
                 </div>
@@ -441,6 +482,19 @@ function parseExtends(extendsString) {
     return extendsString.split(',').map(code => code.trim()).filter(code => code);
 }
 
+// Get full language name from code
+function getLanguageName(languageCode) {
+    if (!languageCode) return '';
+    
+    // Handle multiple languages separated by commas
+    if (languageCode.includes(',')) {
+        const codes = languageCode.split(',').map(code => code.trim());
+        return codes.map(code => languageMapping[code] || code).join(', ');
+    }
+    
+    return languageMapping[languageCode] || languageCode;
+}
+
 // Handle dataset card clicks
 function handleDatasetClick(event) {
     const card = event.target.closest('.dataset-card');
@@ -456,6 +510,9 @@ function handleDatasetClick(event) {
 
 // Show dataset detail view
 function showDatasetDetail(dataset) {
+    // Scroll to top first
+    window.scrollTo(0, 0);
+    
     currentDataset = dataset;
     currentView = 'detail';
     
@@ -519,7 +576,7 @@ function createDatasetDetail(dataset) {
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Languages</div>
-                    <div class="detail-value">${dataset.Languages || 'Not specified'}</div>
+                    <div class="detail-value">${dataset.Languages ? getLanguageName(dataset.Languages) : 'Not specified'}</div>
                 </div>
             </div>
         </div>
@@ -598,6 +655,9 @@ function createDatasetDetail(dataset) {
 
 // Show listing view
 function showListingView() {
+    // Scroll to top first
+    window.scrollTo(0, 0);
+    
     currentView = 'listing';
     currentDataset = null;
     
