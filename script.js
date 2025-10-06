@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         populateFilters();
         renderDatasets();
         updateCounts();
+        generateDynamicInsights(); // Add this line
     } catch (error) {
         console.error('Error initializing application:', error);
         showError('Failed to load data. Please refresh the page.');
@@ -736,3 +737,214 @@ const additionalStyles = `
 const styleSheet = document.createElement('style');
 styleSheet.textContent = additionalStyles;
 document.head.appendChild(styleSheet);
+
+// Generate dynamic insights based on actual data
+function generateDynamicInsights() {
+    if (!datasets || datasets.length === 0) return;
+    
+    const insights = analyzeData();
+    updateInsightsSection(insights);
+}
+
+// Analyze the dataset to generate insights
+function analyzeData() {
+    const totalDatasets = datasets.length;
+    
+    // Domain analysis
+    const domainCounts = {};
+    const taskCounts = {};
+    const granularityCounts = {};
+    const languageCounts = {};
+    const stageCounts = {};
+    const licenseCounts = {};
+    const yearCounts = {};
+    const sizes = [];
+    
+    datasets.forEach(dataset => {
+        // Count domains
+        if (dataset.Domain && dataset.Domain.trim()) {
+            domainCounts[dataset.Domain] = (domainCounts[dataset.Domain] || 0) + 1;
+        }
+        
+        // Count tasks
+        if (dataset.Task && dataset.Task.trim()) {
+            taskCounts[dataset.Task] = (taskCounts[dataset.Task] || 0) + 1;
+        }
+        
+        // Count granularity
+        if (dataset.Granularity && dataset.Granularity.trim()) {
+            granularityCounts[dataset.Granularity] = (granularityCounts[dataset.Granularity] || 0) + 1;
+        }
+        
+        // Count languages
+        if (dataset.Languages && dataset.Languages.trim()) {
+            const languages = dataset.Languages.split(',').map(lang => lang.trim());
+            languages.forEach(lang => {
+                languageCounts[lang] = (languageCounts[lang] || 0) + 1;
+            });
+        }
+        
+        // Count RE stages
+        if (dataset['RE stage'] && dataset['RE stage'].trim()) {
+            stageCounts[dataset['RE stage']] = (stageCounts[dataset['RE stage']] || 0) + 1;
+        }
+        
+        // Count licenses
+        if (dataset.License && dataset.License.trim()) {
+            licenseCounts[dataset.License] = (licenseCounts[dataset.License] || 0) + 1;
+        }
+        
+        // Count years
+        if (dataset.Year && dataset.Year.trim()) {
+            yearCounts[dataset.Year] = (yearCounts[dataset.Year] || 0) + 1;
+        }
+        
+        // Collect sizes
+        if (dataset.Size && dataset.Size.trim() && !isNaN(parseInt(dataset.Size))) {
+            sizes.push(parseInt(dataset.Size));
+        }
+    });
+    
+    // Get top domains
+    const topDomains = Object.entries(domainCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([domain, count]) => ({ domain, count }));
+    
+    // Get top tasks
+    const topTasks = Object.entries(taskCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([task, count]) => ({ task, count }));
+    
+    // Get top granularity levels
+    const topGranularity = Object.entries(granularityCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 2)
+        .map(([granularity, count]) => ({ granularity, count }));
+    
+    // Get top RE stages
+    const topStages = Object.entries(stageCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 2)
+        .map(([stage, count]) => ({ stage, count }));
+    
+    // Calculate language statistics
+    const englishCount = languageCounts['en'] || 0;
+    const englishPercentage = Math.round((englishCount / totalDatasets) * 100);
+    const nonEnglishLanguages = Object.keys(languageCounts).filter(lang => lang !== 'en');
+    
+    // Calculate open license percentage
+    const openLicenses = ['Creative Commons Attribution Share Alike 4.0 International', 
+                         'GNU General Public License v3.0', 'Apache 2.0', 'MIT'];
+    const openLicenseCount = Object.entries(licenseCounts)
+        .filter(([license]) => openLicenses.some(open => license.includes(open)))
+        .reduce((sum, [, count]) => sum + count, 0);
+    const openPercentage = Math.round((openLicenseCount / totalDatasets) * 100);
+    
+    // Calculate temporal trends
+    const currentYear = new Date().getFullYear();
+    const recentYears = Object.keys(yearCounts)
+        .filter(year => parseInt(year) >= currentYear - 3)
+        .reduce((sum, year) => sum + yearCounts[year], 0);
+    const recentPercentage = Math.round((recentYears / totalDatasets) * 100);
+    
+    // Calculate size statistics
+    const minSize = sizes.length > 0 ? Math.min(...sizes) : 0;
+    const maxSize = sizes.length > 0 ? Math.max(...sizes) : 0;
+    
+    return {
+        totalDatasets,
+        domainCount: Object.keys(domainCounts).length,
+        topDomains,
+        topTasks,
+        topGranularity,
+        topStages,
+        englishPercentage,
+        nonEnglishLanguages,
+        openPercentage,
+        recentPercentage,
+        minSize,
+        maxSize,
+        taskCounts,
+        granularityCounts
+    };
+}
+
+// Update the insights section with dynamic data
+function updateInsightsSection(insights) {
+    // Domain Coverage
+    const domainText = insights.domainCount > 1 ? `${insights.domainCount} domains` : 'multiple domains';
+    const topDomainText = insights.topDomains.length > 0 
+        ? insights.topDomains.slice(0, 2).map(d => d.domain).join(' and ')
+        : 'various domains';
+    
+    updateInsightElement('insight-domains', domainText);
+    updateInsightElement('top-domain', topDomainText);
+    
+    // Task Diversity
+    const topTask = insights.topTasks[0];
+    const taskText = topTask ? topTask.task : 'various tasks';
+    const taskPercentage = topTask ? Math.round((topTask.count / insights.totalDatasets) * 100) : 0;
+    
+    updateInsightElement('insight-tasks', taskText);
+    updateInsightElement('classification-percentage', `${taskPercentage}%`);
+    
+    // Data Granularity
+    const granularityText = Object.keys(insights.granularityCounts).length > 1 
+        ? 'multiple granularity levels' 
+        : 'various granularity levels';
+    const topGranularityText = insights.topGranularity.length > 0 
+        ? insights.topGranularity[0].granularity.toLowerCase()
+        : 'document-level';
+    const secondGranularityText = insights.topGranularity.length > 1 
+        ? insights.topGranularity[1].granularity.toLowerCase()
+        : 'sentence-level';
+    
+    updateInsightElement('insight-granularity', granularityText);
+    updateInsightElement('top-granularity', topGranularityText);
+    updateInsightElement('second-granularity', secondGranularityText);
+    
+    // Language Support
+    const englishText = insights.englishPercentage > 50 ? 'English dominates' : 'English is prominent';
+    const multilingualText = insights.nonEnglishLanguages.length > 0 
+        ? 'multilingual datasets' 
+        : 'other languages';
+    
+    updateInsightElement('insight-english', englishText);
+    updateInsightElement('english-percentage', `${insights.englishPercentage}%`);
+    updateInsightElement('insight-multilingual', multilingualText);
+    
+    // Size Distribution
+    const minSizeText = insights.minSize > 0 ? `under ${Math.ceil(insights.minSize / 100) * 100} items` : 'small datasets';
+    const maxSizeText = insights.maxSize > 0 ? `over ${Math.floor(insights.maxSize / 1000) * 1000} items` : 'large collections';
+    
+    updateInsightElement('min-size', minSizeText);
+    updateInsightElement('max-size', maxSizeText);
+    
+    // Temporal Trends
+    const trendText = insights.recentPercentage > 50 ? 'increasing activity' : 'steady growth';
+    
+    updateInsightElement('insight-trend', trendText);
+    updateInsightElement('recent-datasets', `${insights.recentPercentage}%`);
+    
+    // RE Stage Coverage
+    const stageText = Object.keys(insights.topStages).length > 1 ? 'all major RE stages' : 'various RE stages';
+    const topStageText = insights.topStages.length > 0 
+        ? insights.topStages[0].stage.toLowerCase()
+        : 'analysis and verification';
+    
+    updateInsightElement('insight-stages', stageText);
+    updateInsightElement('top-stage', topStageText);
+    
+    // Openness
+    updateInsightElement('open-percentage', `${insights.openPercentage}%`);
+}
+
+// Helper function to update insight elements
+function updateInsightElement(id, text) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = text;
+    }
+}
