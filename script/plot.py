@@ -13,7 +13,7 @@ sns.set_palette("husl")
 # Configuration parameters
 PROPERTIES = [
     'License', 'Artifact type', 'Granularity', 'RE stage', 
-    'Task', 'Domain', 'Languages'
+    'Task', 'Domain',  'Size', 'Languages'  # Added 'Size'
 ]
 
 # SPDX license mapping for cleaner display
@@ -78,6 +78,39 @@ def map_language_codes(language_value):
     # If no exact match found, return 'Undefined'
     return 'Undefined'
 
+# Add size mapping function
+def map_size_categories(size_value):
+    """Convert size values to categorical ranges"""
+    if pd.isna(size_value) or size_value == '' or size_value == '-':
+        return 'Undefined'
+    
+    try:
+        # Convert to numeric, handling different formats
+        size_str = str(size_value).strip().lower()
+        
+        # Remove common suffixes and convert to number
+        if 'k' in size_str:
+            size_num = float(size_str.replace('k', '').replace(',', '')) * 1000
+        elif 'm' in size_str:
+            size_num = float(size_str.replace('m', '').replace(',', '')) * 1000000
+        else:
+            # Try to convert directly to number
+            size_num = float(size_str.replace(',', ''))
+        
+        # Categorize based on size
+        if size_num < 1000:
+            return '<1K'
+        elif size_num < 10000:
+            return '1K-10K'
+        elif size_num < 100000:
+            return '10K-100K'
+        else:
+            return '>100K'
+            
+    except (ValueError, TypeError):
+        # If conversion fails, return 'Undefined'
+        return 'Undefined'
+
 def load_and_clean_data(filepath):
     """Load and clean the dataset"""
     df = pd.read_csv(filepath)
@@ -114,7 +147,7 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
     """Create a single stacked horizontal bar chart"""
     
     # Set up the figure with reduced height
-    fig, ax = plt.subplots(figsize=(12, 6))  # Reduced from 8 to 6
+    fig, ax = plt.subplots(figsize=(12, 7))  # Reduced from 8 to 6
     
     # Prepare data for each property
     property_data = {}
@@ -128,6 +161,9 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
         # Special handling for Languages column
         elif prop == 'Languages':
             values = values.apply(map_language_codes)
+        # Special handling for Size column
+        elif prop == 'Size':
+            values = values.apply(map_size_categories)
         
         # Replace empty strings and dashes with 'Undefined'
         values = values.replace(['', '-', 'nan'], 'Undefined')
@@ -280,6 +316,8 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
             values = values.apply(map_license_to_spdx)
         elif prop == 'Languages':
             values = values.apply(map_language_codes)
+        elif prop == 'Size':
+            values = values.apply(map_size_categories)
         values = values.replace(['', '-', 'nan'], 'Undefined')
         values = values.apply(capitalize_label)
         
