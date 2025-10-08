@@ -71,17 +71,12 @@ def map_language_codes(language_value):
     
     language_str = str(language_value).lower().strip()
     
-    # Check for exact matches first
+    # Check for exact matches only
     if language_str in LANGUAGE_MAPPING:
         return LANGUAGE_MAPPING[language_str]
     
-    # Check for partial matches (in case there are multiple codes)
-    for code, name in LANGUAGE_MAPPING.items():
-        if code in language_str:
-            return name
-    
-    # If no match found, return capitalized original
-    return language_value.capitalize()
+    # If no exact match found, return 'Undefined'
+    return 'Undefined'
 
 def load_and_clean_data(filepath):
     """Load and clean the dataset"""
@@ -103,7 +98,7 @@ def map_license_to_spdx(license_value):
     
     return str(license_value)
 
-def aggregate_low_frequency_values(values, threshold=3):
+def aggregate_low_frequency_values(values, threshold=1):  # Changed from 3 to 2
     """Aggregate values with frequency below threshold into 'Others'"""
     counter = Counter(values)
     high_freq = {k: v for k, v in counter.items() if v >= threshold}
@@ -141,7 +136,7 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
         values = values.apply(capitalize_label)
         
         # Aggregate low frequency values
-        value_counts = aggregate_low_frequency_values(values, threshold=2)
+        value_counts = aggregate_low_frequency_values(values, threshold=1)  # Changed from 2 to 3
         
         # Sort by frequency (descending), but put 'Undefined' last
         sorted_items = sorted(value_counts.items(), key=lambda x: x[1], reverse=True)
@@ -185,6 +180,7 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
         values = property_data[prop]
         
         left = 0
+        
         for j, (value, count) in enumerate(values.items()):
             # Calculate color based on frequency
             if value == 'Undefined':
@@ -203,14 +199,13 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
             ax.barh(i, count, left=left, height=bar_width, 
                    color=color, alpha=0.8, edgecolor=edgecolor, linewidth=linewidth)
             
-            # Add label - inside bar if wide enough, above with arrow if too narrow
-            if count >= 1:
+            # Add label only if frequency is 3 or higher
+            if count >= 3:
                 # Determine text color based on background brightness
                 if value == 'Undefined':
                     text_color = 'black'  # Always black for light grey undefined
                 else:
                     # Calculate brightness of the background color
-                    # Convert color to RGB if it's not already
                     if hasattr(color, '__len__') and len(color) == 4:  # RGBA
                         r, g, b, a = color
                     elif hasattr(color, '__len__') and len(color) == 3:  # RGB
@@ -222,41 +217,26 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
                         r, g, b = rgb
                     
                     # Calculate relative luminance (brightness)
-                    # Using the standard formula: 0.299*R + 0.587*G + 0.114*B
                     brightness = 0.299 * r + 0.587 * g + 0.114 * b
                     
                     # Use black text for light backgrounds, white for dark backgrounds
                     text_color = 'black' if brightness > 0.5 else 'white'
                 
-                # Check if bar is wide enough for internal label
-                if count >= 8:  # Wide enough for internal label
-                    ax.text(left + count/2, i, f'{value}\n({count})', 
-                           ha='center', va='center', fontweight='normal', 
-                           fontsize=12, color=text_color)  # Increased from 10 to 12
-                else:  # Too narrow, put label above with arrow
-                    # Position label above the bar
-                    label_x = left + count/2
-                    label_y = i + 0.5  # Above the bar
-                    
-                    # Add the label
-                    ax.text(label_x, label_y, f'{value} ({count})', 
-                           ha='center', va='bottom', fontweight='normal', 
-                           fontsize=12, color='black')  # Increased from 10 to 12
-                    
-                    # Add arrow pointing down to the bar
-                    ax.annotate('', xy=(label_x, i + 0.4), xytext=(label_x, label_y - 0.1),
-                               arrowprops=dict(arrowstyle='->', color='black', lw=1))
+                # Add label with number below (always centered)
+                ax.text(left + count/2, i, f'{value}\n({count})', 
+                       ha='center', va='center', fontweight='normal', 
+                       fontsize=14, color=text_color)
             
             left += count
     
     # Customize the plot - consistent font sizes
     ax.set_yticks(y_pos)
-    ax.set_yticklabels(properties, fontsize=12, fontweight='normal')
-    ax.set_xlabel('Number of Datasets', fontsize=12, fontweight='normal')
+    ax.set_yticklabels(properties, fontsize=14, fontweight='normal')
+    ax.set_xlabel('Number of Datasets', fontsize=14, fontweight='normal')
     
     # Set x-axis tick labels to same font size
-    ax.tick_params(axis='x', labelsize=12)
-    ax.tick_params(axis='y', labelsize=12)  # This ensures y-axis ticks are also 12pt
+    ax.tick_params(axis='x', labelsize=14)
+    ax.tick_params(axis='y', labelsize=14)  # This ensures y-axis ticks are also 12pt
     
     # Remove spines
     ax.spines['top'].set_visible(False)
@@ -303,7 +283,7 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
         values = values.replace(['', '-', 'nan'], 'Undefined')
         values = values.apply(capitalize_label)
         
-        value_counts = aggregate_low_frequency_values(values, threshold=2)
+        value_counts = aggregate_low_frequency_values(values, threshold=1)  # Changed from 2 to 3
         total = len(df)
         
         print(f"\n{prop}:")
