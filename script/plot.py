@@ -13,7 +13,7 @@ sns.set_palette("husl")
 # Configuration parameters
 PROPERTIES = [
     'License', 'Artifact type', 'Granularity', 'RE stage', 
-    'Task', 'Domain',  'Size', 'Languages'  # Added 'Size'
+    'Task', 'Domain',  'Size', 'Languages'
 ]
 
 # SPDX license mapping for cleaner display
@@ -146,7 +146,7 @@ def map_license_to_spdx(license_value):
     
     return str(license_value)
 
-def aggregate_low_frequency_values(values, threshold=1):  # Changed from 3 to 2
+def aggregate_low_frequency_values(values, threshold=1):
     """Aggregate values with frequency below threshold into 'Others'"""
     counter = Counter(values)
     high_freq = {k: v for k, v in counter.items() if v >= threshold}
@@ -162,7 +162,7 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
     """Create a single stacked horizontal bar chart"""
     
     # Set up the figure with reduced height
-    fig, ax = plt.subplots(figsize=(12, 6))  # Reduced from 8 to 6
+    fig, ax = plt.subplots(figsize=(12, 6))
     
     # Prepare data for each property
     property_data = {}
@@ -187,7 +187,7 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
         values = values.apply(capitalize_label)
         
         # Aggregate low frequency values
-        value_counts = aggregate_low_frequency_values(values, threshold=1)  # Changed from 2 to 3
+        value_counts = aggregate_low_frequency_values(values, threshold=1)
         
         # Sort by frequency (descending), but put 'Undefined' last
         sorted_items = sorted(value_counts.items(), key=lambda x: x[1], reverse=True)
@@ -199,9 +199,6 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
                 undefined_item = item
             else:
                 other_items.append(item)
-        
-        #if undefined_item:
-        #    sorted_items = other_items + [undefined_item]
         
         property_data[prop] = dict(sorted_items)
     
@@ -341,7 +338,7 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
         values = values.replace(['', '-', 'nan'], 'Undefined')
         values = values.apply(capitalize_label)
         
-        value_counts = aggregate_low_frequency_values(values, threshold=1)  # Changed from 2 to 3
+        value_counts = aggregate_low_frequency_values(values, threshold=1)
         total = len(df)
         
         print(f"\n{prop}:")
@@ -354,7 +351,7 @@ def create_bubble_plot(df, output_file='re_stage_task_bubble.png'):
     """Create a bubble plot crossing RE stage and Task properties"""
     
     # Set up the figure with slightly more height to prevent bottom cropping
-    fig, ax = plt.subplots(figsize=(6, 3.5))  # Increased height from 3 to 3.5
+    fig, ax = plt.subplots(figsize=(6, 3.5))
     
     # Prepare data for RE stage and Task
     re_stage_values = df['RE stage'].fillna('Undefined').astype(str)
@@ -430,8 +427,8 @@ def create_bubble_plot(df, output_file='re_stage_task_bubble.png'):
         color = colormap(normalized_count)
         
         # Calculate bubble size (larger bubbles, less padding)
-        min_size = 200  # Increased from 50
-        max_size = 2000  # Increased from 800
+        min_size = 200
+        max_size = 2000
         size = min_size + (row['count'] - min_count) / (max_count - min_count) * (max_size - min_size) if max_count > min_count else (min_size + max_size) / 2
         
         # Draw the bubble
@@ -460,17 +457,17 @@ def create_bubble_plot(df, output_file='re_stage_task_bubble.png'):
     
     # Set up axes with more compact styling
     ax.set_xticks(range(len(tasks)))
-    ax.set_xticklabels(tasks, fontsize=10, fontweight='normal', rotation=30, ha='right')  # Changed from 8 to 10
+    ax.set_xticklabels(tasks, fontsize=10, fontweight='normal', rotation=30, ha='right')
     ax.set_yticks(range(len(re_stages)))
-    ax.set_yticklabels(re_stages, fontsize=10, fontweight='normal')  # Changed from 8 to 10
+    ax.set_yticklabels(re_stages, fontsize=10, fontweight='normal')
     
     # Remove axis labels completely
-    # ax.set_xlabel('Task', fontsize=12, fontweight='normal')  # Commented out
-    # ax.set_ylabel('RE Stage', fontsize=12, fontweight='normal')  # Commented out
+    # ax.set_xlabel('Task', fontsize=12, fontweight='normal')
+    # ax.set_ylabel('RE Stage', fontsize=12, fontweight='normal')
     
     # Set tick parameters to match bar plot
-    ax.tick_params(axis='x', labelsize=14)  # Changed from 12 to 14
-    ax.tick_params(axis='y', labelsize=14)  # Changed from 12 to 14
+    ax.tick_params(axis='x', labelsize=14)
+    ax.tick_params(axis='y', labelsize=14)
     
     # Remove spines (same as bar plot)
     ax.spines['top'].set_visible(False)
@@ -487,7 +484,7 @@ def create_bubble_plot(df, output_file='re_stage_task_bubble.png'):
     ax.set_ylim(-0.5, len(re_stages) - 0.5)
     
     # Adjust layout with tighter spacing
-    plt.tight_layout(pad=0.5)  # Reduced padding even more
+    plt.tight_layout(pad=0.5)
     
     # Save the plot
     plt.savefig('figures/' + output_file, dpi=300, bbox_inches='tight', 
@@ -527,9 +524,18 @@ def create_year_line_plot(df, output_file='year_dataset_line.png'):
     # Count datasets per year
     year_counts = valid_years.value_counts().sort_index()
     
+    # Create complete year range from min to max year
+    min_year = int(year_counts.index.min())
+    max_year = int(year_counts.index.max())
+    complete_years = range(min_year, max_year + 1)
+    
+    # Create a complete series with 0 values for missing years
+    complete_year_counts = pd.Series(index=complete_years, data=0)
+    complete_year_counts.update(year_counts)  # Update with actual counts
+    
     # Create the line plot
-    years = year_counts.index
-    counts = year_counts.values
+    years = complete_year_counts.index
+    counts = complete_year_counts.values
     
     # Use different blue-based colors from our palette
     line_color = '#1f77b4'  # Darker blue for the line
@@ -545,17 +551,19 @@ def create_year_line_plot(df, output_file='year_dataset_line.png'):
             markeredgewidth=2)
     
     # Add count labels on each point with better positioning to avoid overlap
+    # Only show labels for non-zero counts to avoid clutter
     for year, count in zip(years, counts):
-        ax.text(year, count + max(counts) * 0.05, str(count), ha='center', va='bottom', 
-               fontweight='normal', fontsize=16, color=line_color)  # Changed from 14 to 16
+        if count > 0:  # Only show labels for years with datasets
+            ax.text(year, count + max(counts) * 0.05, str(count), ha='center', va='bottom', 
+                   fontweight='normal', fontsize=16, color=line_color)
     
     # Set up axes with same styling as bubble plot
-    ax.set_xlabel('Year', fontsize=14, fontweight='normal')  # Changed from 12 to 14
-    ax.set_ylabel('Number of Datasets', fontsize=14, fontweight='normal')  # Changed from 12 to 14
+    ax.set_xlabel('Year', fontsize=14, fontweight='normal')
+    ax.set_ylabel('Number of Datasets', fontsize=14, fontweight='normal')
     
     # Set tick parameters to match bubble plot
-    ax.tick_params(axis='x', labelsize=14)  # Changed from 12 to 14
-    ax.tick_params(axis='y', labelsize=14)  # Changed from 12 to 14
+    ax.tick_params(axis='x', labelsize=14)
+    ax.tick_params(axis='y', labelsize=14)
     
     # Remove spines (same as bubble plot)
     ax.spines['top'].set_visible(False)
@@ -585,11 +593,11 @@ def create_year_line_plot(df, output_file='year_dataset_line.png'):
     print("="*60)
     print(f"Total datasets with valid years: {len(valid_years)}")
     print(f"Year range: {min(years)} - {max(years)}")
-    print("\Datasets per year:")
-    for year, count in year_counts.items():
+    print("Datasets per year:")
+    for year, count in complete_year_counts.items():
         print(f"  {year}: {count}")
     
-    return year_counts
+    return complete_year_counts
 
 def main():
     """Main function"""
