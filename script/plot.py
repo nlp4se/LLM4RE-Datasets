@@ -75,6 +75,21 @@ def map_language_codes(language_value):
     if language_str in LANGUAGE_MAPPING:
         return LANGUAGE_MAPPING[language_str]
     
+    # Check for multiple languages (comma-separated)
+    if ',' in language_str:
+        # Split by comma and map each language
+        languages = [lang.strip() for lang in language_str.split(',')]
+        mapped_languages = []
+        
+        for lang in languages:
+            if lang in LANGUAGE_MAPPING:
+                mapped_languages.append(LANGUAGE_MAPPING[lang])
+            else:
+                mapped_languages.append(lang.capitalize())  # Fallback to capitalized original
+        
+        # Join with comma and space
+        return ', '.join(mapped_languages)
+    
     # If no exact match found, return 'Undefined'
     return 'Undefined'
 
@@ -147,7 +162,7 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
     """Create a single stacked horizontal bar chart"""
     
     # Set up the figure with reduced height
-    fig, ax = plt.subplots(figsize=(12, 7))  # Reduced from 8 to 6
+    fig, ax = plt.subplots(figsize=(12, 6))  # Reduced from 8 to 6
     
     # Prepare data for each property
     property_data = {}
@@ -185,8 +200,8 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
             else:
                 other_items.append(item)
         
-        if undefined_item:
-            sorted_items = other_items + [undefined_item]
+        #if undefined_item:
+        #    sorted_items = other_items + [undefined_item]
         
         property_data[prop] = dict(sorted_items)
     
@@ -219,17 +234,17 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
         
         for j, (value, count) in enumerate(values.items()):
             # Calculate color based on frequency
-            if value == 'Undefined':
-                # Very light grey for undefined, with white border for consistency
-                color = '#f0f0f0'  # Very light grey
-                edgecolor = 'white'  # Changed from 'none' to 'white'
-                linewidth = 1.5  # Changed from 0 to 1.5 (same as other segments)
-            else:
-                # Normalize count to [0,1] for colormap
-                normalized_count = (count - min_count) / (max_count - min_count) if max_count > min_count else 0.5
-                color = colormap(normalized_count)
-                edgecolor = 'white'
-                linewidth = 1.5
+            #if value == 'Undefined':
+            #    # Very light grey for undefined, with white border for consistency
+            #    color = '#f0f0f0'  # Very light grey
+            #    edgecolor = 'white'  # Changed from 'none' to 'white'
+            #    linewidth = 1.5  # Changed from 0 to 1.5 (same as other segments)
+            #else:
+            # Normalize count to [0,1] for colormap
+            normalized_count = (count - min_count) / (max_count - min_count) if max_count > min_count else 0.5
+            color = colormap(normalized_count)
+            edgecolor = 'white'
+            linewidth = 1.5
             
             # Draw the segment
             ax.barh(i, count, left=left, height=bar_width, 
@@ -258,10 +273,15 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
                     # Use black text for light backgrounds, white for dark backgrounds
                     text_color = 'black' if brightness > 0.5 else 'white'
                 
+                if count <= 10:
+                    rotation = 15
+                else:
+                    rotation = 0
+
                 # Add label with number below (always centered)
                 ax.text(left + count/2, i, f'{value}\n({count})', 
                        ha='center', va='center', fontweight='normal', 
-                       fontsize=14, color=text_color)
+                       fontsize=14, color=text_color, rotation=rotation)
             
             left += count
     
@@ -300,7 +320,7 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
     plt.tight_layout()
     
     # Save the plot
-    plt.savefig(output_file, dpi=300, bbox_inches='tight', 
+    plt.savefig('figures/' + output_file, dpi=300, bbox_inches='tight', 
                 facecolor='white', edgecolor='none')
     
     print(f"Stacked distribution plot saved as {output_file}")
@@ -330,6 +350,247 @@ def create_stacked_distribution_plot(df, properties, output_file='dataset_distri
             percentage = (count / total) * 100
             print(f"  {value}: {count} ({percentage:.1f}%)")
 
+def create_bubble_plot(df, output_file='re_stage_task_bubble.png'):
+    """Create a bubble plot crossing RE stage and Task properties"""
+    
+    # Set up the figure with slightly more height to prevent bottom cropping
+    fig, ax = plt.subplots(figsize=(6, 3.5))  # Increased height from 3 to 3.5
+    
+    # Prepare data for RE stage and Task
+    re_stage_values = df['RE stage'].fillna('Undefined').astype(str)
+    task_values = df['Task'].fillna('Undefined').astype(str)
+    
+    # Replace empty strings and dashes with 'Undefined'
+    re_stage_values = re_stage_values.replace(['', '-', 'nan'], 'Undefined')
+    task_values = task_values.replace(['', '-', 'nan'], 'Undefined')
+    
+    # Capitalize labels
+    re_stage_values = re_stage_values.apply(capitalize_label)
+    task_values = task_values.apply(capitalize_label)
+    
+    # Parse "verification & validation" to "v&v" for better visibility
+    re_stage_values = re_stage_values.replace('Verification & validation', 'V&V')
+    
+    # Create cross-tabulation
+    cross_tab = pd.crosstab(re_stage_values, task_values)
+    
+    # Define custom order for both axes
+    # Y-axis order (top to bottom): elicitation, analysis, specification, management, v&v
+    re_stage_order = ['V&V', 'Management', 'Specification', 'Analysis', 'Elicitation']  # Reversed order
+    task_order = ['Classification', 'Extraction', 'Modelling', 'Traceability', 'Q&A']
+    
+    # Reorder the cross-tabulation according to custom order
+    # Only include categories that exist in the data
+    re_stages = [stage for stage in re_stage_order if stage in cross_tab.index]
+    tasks = [task for task in task_order if task in cross_tab.columns]
+    
+    # Reorder the cross-tabulation
+    cross_tab = cross_tab.reindex(index=re_stages, columns=tasks, fill_value=0)
+    
+    # Create bubble plot data
+    bubble_data = []
+    for i, re_stage in enumerate(re_stages):
+        for j, task in enumerate(tasks):
+            count = cross_tab.loc[re_stage, task]
+            if count > 0:  # Only plot bubbles for non-zero counts
+                bubble_data.append({
+                    'x': j,
+                    'y': i,
+                    'size': count,
+                    're_stage': re_stage,
+                    'task': task,
+                    'count': count
+                })
+    
+    # Convert to DataFrame for easier handling
+    bubble_df = pd.DataFrame(bubble_data)
+    
+    if len(bubble_df) == 0:
+        print("No data to plot for RE stage vs Task bubble plot")
+        return
+    
+    # Use the same color scheme as the bar plot
+    import matplotlib.cm as cm
+    from matplotlib.colors import ListedColormap
+    
+    # Get all counts for color mapping
+    all_counts = bubble_df['count'].values
+    min_count = min(all_counts)
+    max_count = max(all_counts)
+    
+    # Use the same Blues colormap as the bar plot
+    colormap = cm.get_cmap('Blues')
+    colors = colormap(np.linspace(0.2, 1.0, 256))  # Start from 0.2 instead of 0.0
+    colormap = ListedColormap(colors)
+    
+    # Create the bubble plot
+    for _, row in bubble_df.iterrows():
+        # Calculate color based on frequency (same logic as bar plot)
+        normalized_count = (row['count'] - min_count) / (max_count - min_count) if max_count > min_count else 0.5
+        color = colormap(normalized_count)
+        
+        # Calculate bubble size (larger bubbles, less padding)
+        min_size = 200  # Increased from 50
+        max_size = 2000  # Increased from 800
+        size = min_size + (row['count'] - min_count) / (max_count - min_count) * (max_size - min_size) if max_count > min_count else (min_size + max_size) / 2
+        
+        # Draw the bubble
+        ax.scatter(row['x'], row['y'], s=size, c=[color], alpha=0.8, 
+                  edgecolors='white', linewidth=1.5)
+        
+        # Add count label for ALL bubbles (including those with 1 instance)
+        # Determine text color based on background brightness (same logic as bar plot)
+        if hasattr(color, '__len__') and len(color) == 4:  # RGBA
+            r, g, b, a = color
+        elif hasattr(color, '__len__') and len(color) == 3:  # RGB
+            r, g, b = color
+        else:
+            import matplotlib.colors as mcolors
+            rgb = mcolors.to_rgb(color)
+            r, g, b = rgb
+        
+        # Calculate relative luminance (brightness)
+        brightness = 0.299 * r + 0.587 * g + 0.114 * b
+        text_color = 'black' if brightness > 0.5 else 'white'
+        
+        # Add count label for all bubbles
+        ax.text(row['x'], row['y'], str(row['count']), 
+               ha='center', va='center', fontweight='normal', 
+               fontsize=14, color=text_color)
+    
+    # Set up axes with more compact styling
+    ax.set_xticks(range(len(tasks)))
+    ax.set_xticklabels(tasks, fontsize=10, fontweight='normal', rotation=30, ha='right')  # Changed from 8 to 10
+    ax.set_yticks(range(len(re_stages)))
+    ax.set_yticklabels(re_stages, fontsize=10, fontweight='normal')  # Changed from 8 to 10
+    
+    # Remove axis labels completely
+    # ax.set_xlabel('Task', fontsize=12, fontweight='normal')  # Commented out
+    # ax.set_ylabel('RE Stage', fontsize=12, fontweight='normal')  # Commented out
+    
+    # Set tick parameters to match bar plot
+    ax.tick_params(axis='x', labelsize=14)  # Changed from 12 to 14
+    ax.tick_params(axis='y', labelsize=14)  # Changed from 12 to 14
+    
+    # Remove spines (same as bar plot)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    
+    # Add grid (same as bar plot)
+    ax.grid(True, alpha=0.3, linestyle='--')
+    
+    # Fix bubble cropping by setting proper axis limits with margins
+    # Add 0.5 margin on each side to prevent bubble cropping
+    ax.set_xlim(-0.5, len(tasks) - 0.5)
+    ax.set_ylim(-0.5, len(re_stages) - 0.5)
+    
+    # Adjust layout with tighter spacing
+    plt.tight_layout(pad=0.5)  # Reduced padding even more
+    
+    # Save the plot
+    plt.savefig('figures/' + output_file, dpi=300, bbox_inches='tight', 
+                facecolor='white', edgecolor='none')
+    
+    print(f"Bubble plot saved as {output_file}")
+    
+    # Show summary statistics
+    print("\n" + "="*60)
+    print("RE STAGE vs TASK CROSS-TABULATION")
+    print("="*60)
+    print(cross_tab)
+    
+    return cross_tab
+
+def create_year_line_plot(df, output_file='year_dataset_line.png'):
+    """Create a line plot showing years of dataset"""
+    
+    # Set up the figure with same dimensions as bubble plot
+    fig, ax = plt.subplots(figsize=(6, 3.5))
+    
+    # Prepare year data
+    year_values = df['Year'].fillna('Undefined').astype(str)
+    
+    # Replace empty strings and dashes with 'Undefined'
+    year_values = year_values.replace(['', '-', 'nan'], 'Undefined')
+    
+    # Filter out 'Undefined' values and convert to numeric
+    valid_years = year_values[year_values != 'Undefined']
+    valid_years = pd.to_numeric(valid_years, errors='coerce')
+    valid_years = valid_years.dropna()
+    
+    if len(valid_years) == 0:
+        print("No valid year data to plot")
+        return
+    
+    # Count datasets per year
+    year_counts = valid_years.value_counts().sort_index()
+    
+    # Create the line plot
+    years = year_counts.index
+    counts = year_counts.values
+    
+    # Use different blue-based colors from our palette
+    line_color = '#1f77b4'  # Darker blue for the line
+    dot_color = '#aec7e8'   # Lighter blue for the dots
+    fill_color = '#dbeafe'  # Very light blue for the shaded area
+    
+    # Draw the shaded area first (behind the line)
+    ax.fill_between(years, counts, alpha=0.3, color=fill_color)
+    
+    # Draw the line plot
+    ax.plot(years, counts, color=line_color, linewidth=3, alpha=0.9, marker='o', 
+            markersize=8, markerfacecolor=dot_color, markeredgecolor=line_color, 
+            markeredgewidth=2)
+    
+    # Add count labels on each point with better positioning to avoid overlap
+    for year, count in zip(years, counts):
+        ax.text(year, count + max(counts) * 0.05, str(count), ha='center', va='bottom', 
+               fontweight='normal', fontsize=16, color=line_color)  # Changed from 14 to 16
+    
+    # Set up axes with same styling as bubble plot
+    ax.set_xlabel('Year', fontsize=14, fontweight='normal')  # Changed from 12 to 14
+    ax.set_ylabel('Number of Datasets', fontsize=14, fontweight='normal')  # Changed from 12 to 14
+    
+    # Set tick parameters to match bubble plot
+    ax.tick_params(axis='x', labelsize=14)  # Changed from 12 to 14
+    ax.tick_params(axis='y', labelsize=14)  # Changed from 12 to 14
+    
+    # Remove spines (same as bubble plot)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    
+    # Add grid (same as bubble plot)
+    ax.grid(True, alpha=0.3, linestyle='--')
+    
+    # Set axis limits with some padding
+    ax.set_xlim(min(years) - 0.5, max(years) + 0.5)
+    ax.set_ylim(0, max(counts) * 1.2)  # More padding on top for labels
+    
+    # Adjust layout with same padding as bubble plot
+    plt.tight_layout(pad=0.5)
+    
+    # Save the plot
+    plt.savefig('figures/' + output_file, dpi=300, bbox_inches='tight', 
+                facecolor='white', edgecolor='none')
+    
+    print(f"Year line plot saved as {output_file}")
+    
+    # Show summary statistics
+    print("\n" + "="*60)
+    print("YEAR DATASET SUMMARY")
+    print("="*60)
+    print(f"Total datasets with valid years: {len(valid_years)}")
+    print(f"Year range: {min(years)} - {max(years)}")
+    print("\Datasets per year:")
+    for year, count in year_counts.items():
+        print(f"  {year}: {count}")
+    
+    return year_counts
+
 def main():
     """Main function"""
     # Load data
@@ -341,8 +602,11 @@ def main():
     # Create the stacked plot
     create_stacked_distribution_plot(df, PROPERTIES, 'dataset_distribution_stacked.png')
     
-    # Create a high-resolution version for papers
-    create_stacked_distribution_plot(df, PROPERTIES, 'dataset_distribution_stacked_high_res.png')
+    # Create the bubble plot
+    create_bubble_plot(df, 're_stage_task_bubble.png')
+    
+    # Create the year line plot
+    create_year_line_plot(df, 'year_dataset_line.png')
 
 if __name__ == "__main__":
     main()

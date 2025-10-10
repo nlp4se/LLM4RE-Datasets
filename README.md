@@ -6,6 +6,13 @@ A web application for browsing and exploring datasets used in Large Language Mod
 
 This project provides a simple web interface to browse a collection of datasets. Users can search, filter, and view detailed information about each dataset.
 
+## Project Structure
+
+- **Root**: HTML+CSS+JS files for the web app (dashboard)
+- **Literature review**: Study selection, IC/EC assessment
+- **Data**: Datasets after data extraction from publications in literature review
+- **Script**: Code generation for plotting data
+
 ## Features
 
 - Browse datasets in an interactive grid
