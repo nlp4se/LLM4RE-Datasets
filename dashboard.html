@@ -459,7 +459,7 @@
             const ctx = document.getElementById('domainChart').getContext('2d');
             const sortedDomains = Object.entries(analytics.domainCounts)
                 .sort(([,a], [,b]) => b - a)
-                .slice(0, 8);
+                //.slice(0, 8);
             
             new Chart(ctx, {
                 type: 'doughnut',
@@ -469,7 +469,9 @@
                         data: sortedDomains.map(([,count]) => count),
                         backgroundColor: [
                             '#667eea', '#764ba2', '#f093fb', '#f5576c',
-                            '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'
+                            '#4facfe', '#00f2fe', '#43e97b', '#38f9d7',
+                            '#ff9a9e', '#fecfef', '#fecfef', '#a8edea',
+                            '#fed6e3', '#d299c2', '#ffecd2', '#fcb69f'
                         ]
                     }]
                 },
