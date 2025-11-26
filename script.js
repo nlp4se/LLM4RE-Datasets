@@ -900,20 +900,48 @@ function loadStateFromURL() {
 
 // Handle initial route (check for dataset ID in path)
 function handleInitialRoute() {
-    const path = window.location.pathname;
+    // Check if we're coming from a GitHub Pages 404.html
+    // When 404.html is served, the pathname might be /404.html, so check sessionStorage
+    const stored404Path = sessionStorage.getItem('404-path');
+    const path = stored404Path || window.location.pathname;
     const pathParts = path.split('/').filter(part => part && part !== 'index.html' && part !== '');
+    
+    // Clear the stored path if it was set
+    if (stored404Path) {
+        sessionStorage.removeItem('404-path');
+    }
     
     // Check if there's a dataset code in the path
     if (pathParts.length > 0) {
         const datasetCode = pathParts[pathParts.length - 1];
         
         // Check if it's a valid dataset code (not a file extension and not a known file)
-        const knownFiles = ['dashboard.html', 'styles.css', 'script.js'];
+        const knownFiles = ['dashboard.html', 'styles.css', 'script.js', '404.html'];
         if (datasetCode && !datasetCode.includes('.') && !knownFiles.includes(datasetCode)) {
             const dataset = datasets.find(d => d.Code === datasetCode);
             if (dataset) {
                 // Show dataset detail view
-                showDatasetDetail(dataset, false); // false = don't update URL (already correct)
+                showDatasetDetail(dataset, !stored404Path); // Update URL unless coming from 404
+                
+                // If coming from 404, update URL using replaceState to avoid adding history entry
+                if (stored404Path) {
+                    const currentPath = window.location.pathname;
+                    let basePath = '';
+                    if (currentPath.includes('index.html') || currentPath.includes('404.html')) {
+                        const pathSegments = currentPath.split('/').slice(0, -1);
+                        basePath = pathSegments.length > 0 ? pathSegments.join('/') + '/' : '/';
+                    } else if (currentPath !== '/') {
+                        const pathSegments = currentPath.split('/').slice(0, -1);
+                        basePath = pathSegments.length > 0 ? pathSegments.join('/') + '/' : '/';
+                    } else {
+                        basePath = '/';
+                    }
+                    if (!basePath.endsWith('/')) {
+                        basePath += '/';
+                    }
+                    const newURL = basePath + dataset.Code;
+                    window.history.replaceState({ view: 'detail', datasetCode: dataset.Code }, '', newURL);
+                }
                 return;
             }
         }
