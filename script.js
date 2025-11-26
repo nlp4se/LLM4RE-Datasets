@@ -69,7 +69,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadData();
         setupEventListeners();
         populateFilters();
-        renderDatasets();
+        
+        // Check for dataset ID in URL path (e.g., /dataset-code)
+        // This must be done after datasets are loaded
+        handleInitialRoute();
+        
+        // If showing listing view, load form state from URL parameters
+        if (currentView === 'listing') {
+            loadStateFromURL();
+            renderDatasets();
+        }
+        
         updateCounts();
         generateDynamicInsights(); // Add this line
     } catch (error) {
@@ -86,10 +96,20 @@ async function loadData() {
         const datasetsText = await datasetsResponse.text();
         datasets = parseCSV(datasetsText);
         
-        // Load publications
-        const publicationsResponse = await fetch('data/publications - selection.csv');
-        const publicationsText = await publicationsResponse.text();
-        publications = parseCSV(publicationsText);
+        // Load publications (optional - handle gracefully if file doesn't exist)
+        try {
+            const publicationsResponse = await fetch('data/publications - selection.csv');
+            if (publicationsResponse.ok) {
+                const publicationsText = await publicationsResponse.text();
+                publications = parseCSV(publicationsText);
+            } else {
+                console.warn('Publications file not found, continuing without publications data');
+                publications = [];
+            }
+        } catch (pubError) {
+            console.warn('Could not load publications file:', pubError);
+            publications = [];
+        }
         
         // Initialize filtered datasets
         filteredDatasets = [...datasets];
@@ -142,21 +162,36 @@ function parseCSVLine(line) {
 // Setup event listeners
 function setupEventListeners() {
     // Search input
-    elements.searchInput.addEventListener('input', debounce(handleSearch, 300));
+    elements.searchInput.addEventListener('input', debounce(() => {
+        handleSearch();
+        updateURLFromForm();
+    }, 300));
     
     // Filter selects
     Object.values(elements.filters).forEach(filter => {
         if (filter) {
-            filter.addEventListener('change', handleFilterChange);
+            filter.addEventListener('change', () => {
+                handleFilterChange();
+                updateURLFromForm();
+            });
         }
     });
     
     // Sort controls
-    elements.sortSelect.addEventListener('change', handleSort);
-    elements.sortDirection.addEventListener('click', toggleSortDirection);
+    elements.sortSelect.addEventListener('change', () => {
+        handleSort();
+        updateURLFromForm();
+    });
+    elements.sortDirection.addEventListener('click', () => {
+        toggleSortDirection();
+        updateURLFromForm();
+    });
     
     // Clear filters
-    elements.clearFilters.addEventListener('click', clearAllFilters);
+    elements.clearFilters.addEventListener('click', () => {
+        clearAllFilters();
+        updateURLFromForm();
+    });
     
     // Back button
     elements.backBtn.addEventListener('click', showListingView);
@@ -182,6 +217,9 @@ function setupEventListeners() {
     
     // Dataset grid clicks
     elements.datasetGrid.addEventListener('click', handleDatasetClick);
+    
+    // Handle browser back/forward navigation
+    window.addEventListener('popstate', handlePopState);
 }
 
 // Debounce function
@@ -513,12 +551,12 @@ function handleDatasetClick(event) {
     const dataset = datasets.find(d => d.Code === datasetCode);
     
     if (dataset) {
-        showDatasetDetail(dataset);
+        showDatasetDetail(dataset, true); // true = update URL
     }
 }
 
 // Show dataset detail view
-function showDatasetDetail(dataset) {
+function showDatasetDetail(dataset, updateURL = false) {
     // Scroll to top first
     window.scrollTo(0, 0);
     
@@ -530,6 +568,34 @@ function showDatasetDetail(dataset) {
     
     elements.detailTitle.textContent = dataset.Name;
     elements.detailContent.innerHTML = createDatasetDetail(dataset);
+    
+    // Update URL to show dataset ID
+    if (updateURL) {
+        // Get base path from current location
+        const currentPath = window.location.pathname;
+        let basePath = '';
+        
+        // If we're on index.html, get its directory
+        if (currentPath.includes('index.html')) {
+            const pathSegments = currentPath.split('/').slice(0, -1);
+            basePath = pathSegments.length > 0 ? pathSegments.join('/') + '/' : '/';
+        } else if (currentPath !== '/') {
+            // If we're on a dataset detail page, get its directory
+            const pathSegments = currentPath.split('/').slice(0, -1);
+            basePath = pathSegments.length > 0 ? pathSegments.join('/') + '/' : '/';
+        } else {
+            // We're at root
+            basePath = '/';
+        }
+        
+        // Ensure basePath ends with /
+        if (!basePath.endsWith('/')) {
+            basePath += '/';
+        }
+        
+        const newURL = basePath + dataset.Code;
+        window.history.pushState({ view: 'detail', datasetCode: dataset.Code }, '', newURL);
+    }
 }
 
 // Create dataset detail HTML
@@ -663,7 +729,7 @@ function createDatasetDetail(dataset) {
 }
 
 // Show listing view
-function showListingView() {
+function showListingView(updateURL = true) {
     // Scroll to top first
     window.scrollTo(0, 0);
     
@@ -672,6 +738,11 @@ function showListingView() {
     
     elements.detailView.classList.remove('active');
     elements.listingView.classList.add('active');
+    
+    // Update URL to show base path with query parameters
+    if (updateURL) {
+        updateURLFromForm();
+    }
 }
 
 // Update counts
@@ -700,10 +771,183 @@ document.addEventListener('click', (event) => {
         const dataset = datasets.find(d => d.Code === code);
         
         if (dataset) {
-            showDatasetDetail(dataset);
+            showDatasetDetail(dataset, true); // true = update URL
         }
     }
 });
+
+// URL Parameter Management Functions
+
+// Get URL query parameters
+function getURLParams() {
+    const params = new URLSearchParams(window.location.search);
+    const result = {};
+    for (const [key, value] of params.entries()) {
+        result[key] = decodeURIComponent(value);
+    }
+    return result;
+}
+
+// Update URL with form state as query parameters
+function updateURLFromForm() {
+    const params = new URLSearchParams();
+    
+    // Add search query
+    if (elements.searchInput.value.trim()) {
+        params.set('search', elements.searchInput.value.trim());
+    }
+    
+    // Add filter values
+    const filterMap = {
+        'license': elements.filters.license.value,
+        'artifact': elements.filters.artifact.value,
+        'granularity': elements.filters.granularity.value,
+        'stage': elements.filters.stage.value,
+        'task': elements.filters.task.value,
+        'domain': elements.filters.domain.value,
+        'language': elements.filters.language.value,
+        'year': elements.filters.year.value
+    };
+    
+    Object.entries(filterMap).forEach(([key, value]) => {
+        if (value && value.trim() !== '') {
+            params.set(key, value);
+        }
+    });
+    
+    // Add sort parameters
+    if (elements.sortSelect.value !== 'name') {
+        params.set('sort', elements.sortSelect.value);
+    }
+    if (elements.sortDirection.dataset.direction !== 'asc') {
+        params.set('sortDir', elements.sortDirection.dataset.direction);
+    }
+    
+    // Build new URL - get base path from current location
+    const currentPath = window.location.pathname;
+    let basePath = '';
+    
+    // If we're on a dataset detail page (path ends with dataset code), go back to index.html
+    const pathParts = currentPath.split('/').filter(part => part && part !== 'index.html' && part !== '');
+    if (pathParts.length > 0) {
+        const lastPart = pathParts[pathParts.length - 1];
+        // Check if last part looks like a dataset code (no file extension)
+        const knownFiles = ['dashboard.html', 'styles.css', 'script.js'];
+        if (lastPart && !lastPart.includes('.') && !knownFiles.includes(lastPart)) {
+            // We're on a dataset detail page, go to index.html
+            const pathSegments = currentPath.split('/').slice(0, -1);
+            if (pathSegments.length > 1) {
+                basePath = pathSegments.join('/') + '/index.html';
+            } else {
+                basePath = 'index.html';
+            }
+        } else {
+            // We're already on index.html or another file
+            basePath = currentPath;
+        }
+    } else {
+        // We're at root, use index.html
+        basePath = 'index.html';
+    }
+    
+    // If basePath doesn't end with index.html and doesn't end with /, ensure it points to index.html
+    if (!basePath.endsWith('index.html') && !basePath.endsWith('/')) {
+        const pathSegments = basePath.split('/').slice(0, -1);
+        if (pathSegments.length > 0) {
+            basePath = pathSegments.join('/') + '/index.html';
+        } else {
+            basePath = 'index.html';
+        }
+    }
+    
+    const newURL = basePath + (params.toString() ? `?${params.toString()}` : '');
+    
+    // Update URL without reload
+    window.history.pushState({ view: 'listing' }, '', newURL);
+}
+
+// Load form state from URL parameters
+function loadStateFromURL() {
+    const params = getURLParams();
+    
+    // Load search query
+    if (params.search) {
+        elements.searchInput.value = params.search;
+    }
+    
+    // Load filter values
+    if (params.license) elements.filters.license.value = params.license;
+    if (params.artifact) elements.filters.artifact.value = params.artifact;
+    if (params.granularity) elements.filters.granularity.value = params.granularity;
+    if (params.stage) elements.filters.stage.value = params.stage;
+    if (params.task) elements.filters.task.value = params.task;
+    if (params.domain) elements.filters.domain.value = params.domain;
+    if (params.language) elements.filters.language.value = params.language;
+    if (params.year) elements.filters.year.value = params.year;
+    
+    // Load sort parameters
+    if (params.sort) elements.sortSelect.value = params.sort;
+    if (params.sortDir) {
+        elements.sortDirection.dataset.direction = params.sortDir;
+        elements.sortDirection.innerHTML = params.sortDir === 'asc' 
+            ? '<i class="fas fa-sort-amount-up"></i>'
+            : '<i class="fas fa-sort-amount-down"></i>';
+    }
+    
+    // Apply filters after loading
+    applyFilters();
+}
+
+// Handle initial route (check for dataset ID in path)
+function handleInitialRoute() {
+    const path = window.location.pathname;
+    const pathParts = path.split('/').filter(part => part && part !== 'index.html' && part !== '');
+    
+    // Check if there's a dataset code in the path
+    if (pathParts.length > 0) {
+        const datasetCode = pathParts[pathParts.length - 1];
+        
+        // Check if it's a valid dataset code (not a file extension and not a known file)
+        const knownFiles = ['dashboard.html', 'styles.css', 'script.js'];
+        if (datasetCode && !datasetCode.includes('.') && !knownFiles.includes(datasetCode)) {
+            const dataset = datasets.find(d => d.Code === datasetCode);
+            if (dataset) {
+                // Show dataset detail view
+                showDatasetDetail(dataset, false); // false = don't update URL (already correct)
+                return;
+            }
+        }
+    }
+    
+    // If no dataset found, show listing view
+    showListingView(false); // false = don't update URL yet (will be updated by loadStateFromURL)
+}
+
+// Handle browser back/forward navigation
+function handlePopState(event) {
+    // Check if there's a dataset code in the current path
+    const path = window.location.pathname;
+    const pathParts = path.split('/').filter(part => part && part !== 'index.html' && part !== '');
+    
+    if (pathParts.length > 0) {
+        const datasetCode = pathParts[pathParts.length - 1];
+        
+        // Check if it's a valid dataset code (not a file extension and not a known file)
+        const knownFiles = ['dashboard.html', 'styles.css', 'script.js'];
+        if (datasetCode && !datasetCode.includes('.') && !knownFiles.includes(datasetCode)) {
+            const dataset = datasets.find(d => d.Code === datasetCode);
+            if (dataset) {
+                showDatasetDetail(dataset, false); // false = don't update URL
+                return;
+            }
+        }
+    }
+    
+    // Otherwise show listing view and load form state from URL
+    showListingView(false); // false = don't update URL
+    loadStateFromURL();
+    renderDatasets();
+}
 
 // Add some CSS for error and no-results states
 const additionalStyles = `
