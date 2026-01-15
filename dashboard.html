@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,7 +14,7 @@
             margin: 0 auto;
             padding: 20px;
         }
-        
+
         .dashboard-header {
             text-align: center;
             margin-bottom: 2rem;
@@ -22,58 +23,58 @@
             color: white;
             border-radius: 10px;
         }
-        
+
         .dashboard-title {
             font-size: 2.5rem;
             margin-bottom: 0.5rem;
         }
-        
+
         .dashboard-subtitle {
             font-size: 1.2rem;
             opacity: 0.9;
         }
-        
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin-bottom: 2rem;
         }
-        
+
         .stat-card {
             background: white;
             padding: 1.5rem;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
-        
+
         .stat-number {
             font-size: 2rem;
             font-weight: bold;
             color: #667eea;
             margin-bottom: 0.5rem;
         }
-        
+
         .stat-label {
             color: #666;
             font-size: 0.9rem;
         }
-        
+
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
             gap: 2rem;
             margin-bottom: 2rem;
         }
-        
+
         .chart-container {
             background: white;
             padding: 1.5rem;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        
+
         .chart-title {
             font-size: 1.3rem;
             font-weight: bold;
@@ -81,22 +82,22 @@
             color: #333;
             text-align: center;
         }
-        
+
         .insights-section {
             background: white;
             padding: 2rem;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             margin-bottom: 2rem;
         }
-        
+
         .insights-title {
             font-size: 1.5rem;
             font-weight: bold;
             margin-bottom: 1rem;
             color: #333;
         }
-        
+
         .insight-item {
             margin-bottom: 1rem;
             padding: 1rem;
@@ -104,16 +105,16 @@
             border-left: 4px solid #667eea;
             border-radius: 5px;
         }
-        
+
         .insight-text {
             margin-bottom: 0.5rem;
         }
-        
+
         .insight-metric {
             font-weight: bold;
             color: #667eea;
         }
-        
+
         .back-to-main {
             position: fixed;
             top: 20px;
@@ -126,35 +127,37 @@
             font-weight: bold;
             z-index: 1000;
         }
-        
+
         .back-to-main:hover {
             background: #5a6fd8;
         }
-        
+
         .full-width-chart {
             grid-column: 1 / -1;
         }
-        
+
         .trend-chart {
             height: 300px;
         }
-        
+
         .domain-treemap {
             height: 400px;
         }
     </style>
 </head>
+
 <body>
     <a href="index.html" class="back-to-main">
         <i class="fas fa-arrow-left"></i> Back to Datasets
     </a>
-    
+
     <div class="dashboard-container">
         <div class="dashboard-header">
             <h1 class="dashboard-title">LLM4RE Datasets Analytics Dashboard</h1>
-            <p class="dashboard-subtitle">Key Characteristics Analysis for Large Language Models in Requirements Engineering</p>
+            <p class="dashboard-subtitle">Key Characteristics Analysis for Large Language Models in Requirements
+                Engineering</p>
         </div>
-        
+
         <!-- Key Statistics -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -182,7 +185,7 @@
                 <div class="stat-label">Years Span</div>
             </div>
         </div>
-        
+
         <!-- Charts Grid -->
         <div class="charts-grid">
             <!-- Dataset Distribution by Domain -->
@@ -190,105 +193,126 @@
                 <h3 class="chart-title">Dataset Distribution by Domain</h3>
                 <canvas id="domainChart"></canvas>
             </div>
-            
+
             <!-- Dataset Distribution by Task -->
             <div class="chart-container">
                 <h3 class="chart-title">Dataset Distribution by Task</h3>
                 <canvas id="taskChart"></canvas>
             </div>
-            
+
             <!-- Dataset Distribution by Artifact Type -->
             <div class="chart-container">
                 <h3 class="chart-title">Dataset Distribution by Artifact Type</h3>
                 <canvas id="artifactChart"></canvas>
             </div>
-            
+
             <!-- Dataset Distribution by RE Stage -->
             <div class="chart-container">
                 <h3 class="chart-title">Dataset Distribution by RE Stage</h3>
                 <canvas id="stageChart"></canvas>
             </div>
-            
+
             <!-- Dataset Size Distribution -->
             <div class="chart-container">
                 <h3 class="chart-title">Dataset Size Distribution</h3>
                 <canvas id="sizeChart"></canvas>
             </div>
-            
+
             <!-- Language Distribution -->
             <div class="chart-container">
                 <h3 class="chart-title">Language Distribution</h3>
                 <canvas id="languageChart"></canvas>
             </div>
-            
+
             <!-- Publication Timeline -->
             <div class="chart-container">
                 <h3 class="chart-title">Dataset Publication Timeline</h3>
                 <canvas id="timelineChart"></canvas>
             </div>
-            
+
             <!-- License Distribution -->
             <div class="chart-container">
                 <h3 class="chart-title">License Distribution</h3>
                 <canvas id="licenseChart"></canvas>
             </div>
-            
+
             <!-- Granularity Distribution -->
             <div class="chart-container">
                 <h3 class="chart-title">Granularity Distribution</h3>
                 <canvas id="granularityChart"></canvas>
             </div>
-            
+
             <!-- Bubble Plot: RE Stage vs Task -->
             <div class="chart-container full-width-chart">
                 <h3 class="chart-title">RE Stage vs Task Distribution</h3>
                 <canvas id="bubbleChart"></canvas>
             </div>
         </div>
-        
+
         <!-- Key Insights -->
         <div class="insights-section">
             <h2 class="insights-title">Key Insights for LLM4RE Tasks</h2>
-            
+
             <div class="insight-item">
-                <div class="insight-text"><strong>Domain Coverage:</strong> The dataset collection spans <span class="insight-metric" id="insight-domains">multiple domains</span>, with the most represented being <span class="insight-metric" id="top-domain">aerospace and healthcare</span>.</div>
+                <div class="insight-text"><strong>Domain Coverage:</strong> The dataset collection spans <span
+                        class="insight-metric" id="insight-domains">multiple domains</span>, with the most represented
+                    being <span class="insight-metric" id="top-domain">aerospace and healthcare</span>.</div>
             </div>
-            
+
             <div class="insight-item">
-                <div class="insight-text"><strong>Task Diversity:</strong> <span class="insight-metric" id="insight-tasks">Classification tasks</span> dominate the collection, representing <span class="insight-metric" id="classification-percentage">over 40%</span> of all datasets.</div>
+                <div class="insight-text"><strong>Task Diversity:</strong> <span class="insight-metric"
+                        id="insight-tasks">Classification tasks</span> dominate the collection, representing <span
+                        class="insight-metric" id="classification-percentage">over 40%</span> of all datasets.</div>
             </div>
-            
+
             <div class="insight-item">
-                <div class="insight-text"><strong>Data Granularity:</strong> The collection includes datasets at <span class="insight-metric" id="insight-granularity">multiple granularity levels</span>, with <span class="insight-metric" id="top-granularity">document-level</span> and <span class="insight-metric" id="second-granularity">sentence-level</span> being most common.</div>
+                <div class="insight-text"><strong>Data Granularity:</strong> The collection includes datasets at <span
+                        class="insight-metric" id="insight-granularity">multiple granularity levels</span>, with <span
+                        class="insight-metric" id="top-granularity">document-level</span> and <span
+                        class="insight-metric" id="second-granularity">sentence-level</span> being most common.</div>
             </div>
-            
+
             <div class="insight-item">
-                <div class="insight-text"><strong>Language Support:</strong> While <span class="insight-metric" id="insight-english">English dominates</span> with <span class="insight-metric" id="english-percentage">over 80%</span> of datasets, there is growing support for <span class="insight-metric" id="insight-multilingual">multilingual datasets</span> including Chinese and other languages.</div>
+                <div class="insight-text"><strong>Language Support:</strong> While <span class="insight-metric"
+                        id="insight-english">English dominates</span> with <span class="insight-metric"
+                        id="english-percentage">over 80%</span> of datasets, there is growing support for <span
+                        class="insight-metric" id="insight-multilingual">multilingual datasets</span> including Chinese
+                    and other languages.</div>
             </div>
-            
+
             <div class="insight-item">
-                <div class="insight-text"><strong>Size Distribution:</strong> Dataset sizes vary significantly, from small datasets with <span class="insight-metric" id="min-size">under 100 items</span> to large-scale collections with <span class="insight-metric" id="max-size">over 400,000 items</span>, providing diverse training scenarios for LLMs.</div>
+                <div class="insight-text"><strong>Size Distribution:</strong> Dataset sizes vary significantly, from
+                    small datasets with <span class="insight-metric" id="min-size">under 100 items</span> to large-scale
+                    collections with <span class="insight-metric" id="max-size">over 400,000 items</span>, providing
+                    diverse training scenarios for LLMs.</div>
             </div>
-            
+
             <div class="insight-item">
-                <div class="insight-text"><strong>Temporal Trends:</strong> The collection shows <span class="insight-metric" id="insight-trend">increasing activity</span> in recent years, with <span class="insight-metric" id="recent-datasets">over 60%</span> of datasets published in the last 3 years, reflecting growing interest in LLM4RE research.</div>
+                <div class="insight-text"><strong>Temporal Trends:</strong> The collection shows <span
+                        class="insight-metric" id="insight-trend">increasing activity</span> in recent years, with <span
+                        class="insight-metric" id="recent-datasets">over 60%</span> of datasets published in the last 3
+                    years, reflecting growing interest in LLM4RE research.</div>
             </div>
-            
+
             <div class="insight-item">
-                <div class="insight-text"><strong>RE Stage Coverage:</strong> Datasets cover <span class="insight-metric" id="insight-stages">all major RE stages</span>, with particular emphasis on <span class="insight-metric" id="top-stage">analysis and verification</span> tasks.</div>
+                <div class="insight-text"><strong>RE Stage Coverage:</strong> Datasets cover <span
+                        class="insight-metric" id="insight-stages">all major RE stages</span>, with particular emphasis
+                    on <span class="insight-metric" id="top-stage">analysis and verification</span> tasks.</div>
             </div>
-            
+
             <div class="insight-item">
-                <div class="insight-text"><strong>Openness:</strong> <span class="insight-metric" id="open-percentage">Over 70%</span> of datasets are available under open licenses, promoting reproducibility and collaborative research in the LLM4RE community.</div>
+                <div class="insight-text"><strong>Openness:</strong> <span class="insight-metric"
+                        id="open-percentage">Over 70%</span> of datasets are available under open licenses, promoting
+                    reproducibility and collaborative research in the LLM4RE community.</div>
             </div>
         </div>
     </div>
-    
+
     <script>
         // Global variables
         let datasets = [];
         let analytics = {};
-        
+
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', async () => {
             try {
@@ -301,19 +325,19 @@
                 console.error('Error initializing dashboard:', error);
             }
         });
-        
+
         // Load data from CSV
         async function loadData() {
-            const response = await fetch('data/datasets - datasets.csv');
+            const response = await fetch('data/datasets.csv');
             const text = await response.text();
             datasets = parseCSV(text);
         }
-        
+
         // Parse CSV data
         function parseCSV(text) {
             const lines = text.trim().split('\n');
             const headers = lines[0].split(',').map(h => h.trim());
-            
+
             return lines.slice(1).map(line => {
                 const values = parseCSVLine(line);
                 const obj = {};
@@ -323,16 +347,16 @@
                 return obj;
             });
         }
-        
+
         // Parse CSV line handling quoted values
         function parseCSVLine(line) {
             const result = [];
             let current = '';
             let inQuotes = false;
-            
+
             for (let i = 0; i < line.length; i++) {
                 const char = line[i];
-                
+
                 if (char === '"') {
                     inQuotes = !inQuotes;
                 } else if (char === ',' && !inQuotes) {
@@ -342,11 +366,11 @@
                     current += char;
                 }
             }
-            
+
             result.push(current.trim());
             return result;
         }
-        
+
         // Calculate analytics
         function calculateAnalytics() {
             analytics = {
@@ -366,12 +390,12 @@
                 sizeRanges: { small: 0, medium: 0, large: 0, xlarge: 0 },
                 yearCounts: {}
             };
-            
+
             datasets.forEach(dataset => {
                 // Size calculations
                 const size = parseInt(dataset.Size) || 0;
                 analytics.totalSize += size;
-                
+
                 // Languages
                 if (dataset.Languages) {
                     const langs = dataset.Languages.split(',').map(l => l.trim());
@@ -380,54 +404,59 @@
                         analytics.languageCounts[lang] = (analytics.languageCounts[lang] || 0) + 1;
                     });
                 }
-                
+
                 // Domains
                 if (dataset.Domain) {
-                    analytics.domains.add(dataset.Domain);
-                    analytics.domainCounts[dataset.Domain] = (analytics.domainCounts[dataset.Domain] || 0) + 1;
+                    const domains = dataset.Domain.split(',').map(d => d.trim());
+                    domains.forEach(domain => {
+                        if (domain) {
+                            analytics.domains.add(domain);
+                            analytics.domainCounts[domain] = (analytics.domainCounts[domain] || 0) + 1;
+                        }
+                    });
                 }
-                
+
                 // Years
                 if (dataset.Year) {
                     analytics.years.add(dataset.Year);
                     analytics.yearCounts[dataset.Year] = (analytics.yearCounts[dataset.Year] || 0) + 1;
                 }
-                
+
                 // Tasks
                 if (dataset.Task) {
                     analytics.taskCounts[dataset.Task] = (analytics.taskCounts[dataset.Task] || 0) + 1;
                 }
-                
+
                 // Artifact types
                 if (dataset['Artifact type']) {
                     analytics.artifactCounts[dataset['Artifact type']] = (analytics.artifactCounts[dataset['Artifact type']] || 0) + 1;
                 }
-                
+
                 // RE stages
                 if (dataset['RE stage']) {
                     analytics.stageCounts[dataset['RE stage']] = (analytics.stageCounts[dataset['RE stage']] || 0) + 1;
                 }
-                
+
                 // Licenses
                 if (dataset.License) {
                     analytics.licenseCounts[dataset.License] = (analytics.licenseCounts[dataset.License] || 0) + 1;
                 }
-                
+
                 // Granularity
                 if (dataset.Granularity) {
                     analytics.granularityCounts[dataset.Granularity] = (analytics.granularityCounts[dataset.Granularity] || 0) + 1;
                 }
-                
+
                 // Size ranges
                 if (size < 1000) analytics.sizeRanges.small++;
                 else if (size < 10000) analytics.sizeRanges.medium++;
                 else if (size < 100000) analytics.sizeRanges.large++;
                 else analytics.sizeRanges.xlarge++;
             });
-            
+
             analytics.avgSize = Math.round(analytics.totalSize / analytics.totalDatasets);
         }
-        
+
         // Update statistics
         function updateStatistics() {
             document.getElementById('total-datasets').textContent = analytics.totalDatasets;
@@ -435,12 +464,12 @@
             document.getElementById('avg-size').textContent = analytics.avgSize.toLocaleString();
             document.getElementById('languages-count').textContent = analytics.languages.size;
             document.getElementById('domains-count').textContent = analytics.domains.size;
-            
+
             const years = Array.from(analytics.years).map(y => parseInt(y)).filter(y => !isNaN(y));
             const yearSpan = years.length > 0 ? Math.max(...years) - Math.min(...years) + 1 : 0;
             document.getElementById('years-span').textContent = yearSpan;
         }
-        
+
         // Create charts
         function createCharts() {
             createDomainChart();
@@ -454,19 +483,19 @@
             createGranularityChart();
             createBubbleChart();
         }
-        
+
         function createDomainChart() {
             const ctx = document.getElementById('domainChart').getContext('2d');
             const sortedDomains = Object.entries(analytics.domainCounts)
-                .sort(([,a], [,b]) => b - a)
-                //.slice(0, 8);
-            
+                .sort(([, a], [, b]) => b - a)
+            //.slice(0, 8);
+
             new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: sortedDomains.map(([domain]) => domain),
                     datasets: [{
-                        data: sortedDomains.map(([,count]) => count),
+                        data: sortedDomains.map(([, count]) => count),
                         backgroundColor: [
                             '#667eea', '#764ba2', '#f093fb', '#f5576c',
                             '#4facfe', '#00f2fe', '#43e97b', '#38f9d7',
@@ -485,19 +514,19 @@
                 }
             });
         }
-        
+
         function createTaskChart() {
             const ctx = document.getElementById('taskChart').getContext('2d');
             const sortedTasks = Object.entries(analytics.taskCounts)
-                .sort(([,a], [,b]) => b - a);
-            
+                .sort(([, a], [, b]) => b - a);
+
             new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: sortedTasks.map(([task]) => task),
                     datasets: [{
                         label: 'Number of Datasets',
-                        data: sortedTasks.map(([,count]) => count),
+                        data: sortedTasks.map(([, count]) => count),
                         backgroundColor: '#667eea'
                     }]
                 },
@@ -511,18 +540,18 @@
                 }
             });
         }
-        
+
         function createArtifactChart() {
             const ctx = document.getElementById('artifactChart').getContext('2d');
             const sortedArtifacts = Object.entries(analytics.artifactCounts)
-                .sort(([,a], [,b]) => b - a);
-            
+                .sort(([, a], [, b]) => b - a);
+
             new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: sortedArtifacts.map(([artifact]) => artifact),
                     datasets: [{
-                        data: sortedArtifacts.map(([,count]) => count),
+                        data: sortedArtifacts.map(([, count]) => count),
                         backgroundColor: [
                             '#667eea', '#764ba2', '#f093fb', '#f5576c',
                             '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'
@@ -539,19 +568,19 @@
                 }
             });
         }
-        
+
         function createStageChart() {
             const ctx = document.getElementById('stageChart').getContext('2d');
             const sortedStages = Object.entries(analytics.stageCounts)
-                .sort(([,a], [,b]) => b - a);
-            
+                .sort(([, a], [, b]) => b - a);
+
             new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: sortedStages.map(([stage]) => stage),
                     datasets: [{
                         label: 'Number of Datasets',
-                        data: sortedStages.map(([,count]) => count),
+                        data: sortedStages.map(([, count]) => count),
                         backgroundColor: '#764ba2'
                     }]
                 },
@@ -566,10 +595,10 @@
                 }
             });
         }
-        
+
         function createSizeChart() {
             const ctx = document.getElementById('sizeChart').getContext('2d');
-            
+
             new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -595,19 +624,19 @@
                 }
             });
         }
-        
+
         function createLanguageChart() {
             const ctx = document.getElementById('languageChart').getContext('2d');
             const sortedLanguages = Object.entries(analytics.languageCounts)
-                .sort(([,a], [,b]) => b - a)
+                .sort(([, a], [, b]) => b - a)
                 .slice(0, 6);
-            
+
             new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: sortedLanguages.map(([lang]) => lang),
                     datasets: [{
-                        data: sortedLanguages.map(([,count]) => count),
+                        data: sortedLanguages.map(([, count]) => count),
                         backgroundColor: [
                             '#667eea', '#764ba2', '#f093fb', '#f5576c',
                             '#4facfe', '#00f2fe'
@@ -624,17 +653,17 @@
                 }
             });
         }
-        
+
         function createTimelineChart() {
             const ctx = document.getElementById('timelineChart').getContext('2d');
-            
+
             // Get min and max years
             const years = Object.keys(analytics.yearCounts).map(y => parseInt(y)).filter(y => !isNaN(y));
             if (years.length === 0) return;
-            
+
             const minYear = Math.min(...years);
             const maxYear = Math.max(...years);
-            
+
             // Create array with all years from min to max
             const allYears = [];
             const allCounts = [];
@@ -642,7 +671,7 @@
                 allYears.push(year.toString());
                 allCounts.push(analytics.yearCounts[year.toString()] || 0);
             }
-            
+
             new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -672,18 +701,18 @@
                 }
             });
         }
-        
+
         function createLicenseChart() {
             const ctx = document.getElementById('licenseChart').getContext('2d');
             const sortedLicenses = Object.entries(analytics.licenseCounts)
-                .sort(([,a], [,b]) => b - a);
-            
+                .sort(([, a], [, b]) => b - a);
+
             new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: sortedLicenses.map(([license]) => license),
                     datasets: [{
-                        data: sortedLicenses.map(([,count]) => count),
+                        data: sortedLicenses.map(([, count]) => count),
                         backgroundColor: [
                             '#667eea', '#764ba2', '#f093fb', '#f5576c',
                             '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'
@@ -700,19 +729,19 @@
                 }
             });
         }
-        
+
         function createGranularityChart() {
             const ctx = document.getElementById('granularityChart').getContext('2d');
             const sortedGranularity = Object.entries(analytics.granularityCounts)
-                .sort(([,a], [,b]) => b - a);
-            
+                .sort(([, a], [, b]) => b - a);
+
             new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: sortedGranularity.map(([granularity]) => granularity),
                     datasets: [{
                         label: 'Number of Datasets',
-                        data: sortedGranularity.map(([,count]) => count),
+                        data: sortedGranularity.map(([, count]) => count),
                         backgroundColor: '#43e97b'
                     }]
                 },
@@ -726,18 +755,18 @@
                 }
             });
         }
-        
+
         function createBubbleChart() {
             const ctx = document.getElementById('bubbleChart').getContext('2d');
-            
+
             // Create matrix of RE stages vs Tasks
             const stages = Object.keys(analytics.stageCounts).sort();
             const tasks = Object.keys(analytics.taskCounts).sort();
-            
+
             // Create bubble data
             const bubbleData = [];
             const stageTaskCounts = {};
-            
+
             // Count datasets for each stage-task combination
             datasets.forEach(dataset => {
                 const stage = dataset['RE stage'];
@@ -747,7 +776,7 @@
                     stageTaskCounts[key] = (stageTaskCounts[key] || 0) + 1;
                 }
             });
-            
+
             // Create bubble data points
             stages.forEach((stage, stageIndex) => {
                 tasks.forEach((task, taskIndex) => {
@@ -762,7 +791,7 @@
                     }
                 });
             });
-            
+
             new Chart(ctx, {
                 type: 'bubble',
                 data: {
@@ -785,7 +814,7 @@
                             max: tasks.length - 0.2,
                             ticks: {
                                 stepSize: 1,
-                                callback: function(value) {
+                                callback: function (value) {
                                     return tasks[Math.round(value)] || '';
                                 },
                                 maxRotation: 45, // Rotate labels to prevent overlap
@@ -802,7 +831,7 @@
                             max: stages.length - 0.2,
                             ticks: {
                                 stepSize: 1,
-                                callback: function(value) {
+                                callback: function (value) {
                                     return stages[Math.round(value)] || '';
                                 }
                             },
@@ -815,7 +844,7 @@
                     plugins: {
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
+                                label: function (context) {
                                     const data = context.raw;
                                     const task = tasks[Math.round(data.x)];
                                     const stage = stages[Math.round(data.y)];
@@ -831,11 +860,11 @@
                 }
             });
         }
-        
+
         // Generate dynamic insights based on actual data
         function generateDynamicInsights() {
             if (!datasets || datasets.length === 0) return;
-            
+
             const insights = analyzeData();
             updateInsightsSection(insights);
         }
@@ -843,7 +872,7 @@
         // Analyze the dataset to generate insights
         function analyzeData() {
             const totalDatasets = datasets.length;
-            
+
             // Domain analysis
             const domainCounts = {};
             const taskCounts = {};
@@ -853,23 +882,28 @@
             const licenseCounts = {};
             const yearCounts = {};
             const sizes = [];
-            
+
             datasets.forEach(dataset => {
                 // Count domains
                 if (dataset.Domain && dataset.Domain.trim()) {
-                    domainCounts[dataset.Domain] = (domainCounts[dataset.Domain] || 0) + 1;
+                    const domains = dataset.Domain.split(',').map(d => d.trim());
+                    domains.forEach(domain => {
+                        if (domain) {
+                            domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+                        }
+                    });
                 }
-                
+
                 // Count tasks
                 if (dataset.Task && dataset.Task.trim()) {
                     taskCounts[dataset.Task] = (taskCounts[dataset.Task] || 0) + 1;
                 }
-                
+
                 // Count granularity
                 if (dataset.Granularity && dataset.Granularity.trim()) {
                     granularityCounts[dataset.Granularity] = (granularityCounts[dataset.Granularity] || 0) + 1;
                 }
-                
+
                 // Count languages
                 if (dataset.Languages && dataset.Languages.trim()) {
                     const languages = dataset.Languages.split(',').map(lang => lang.trim());
@@ -877,76 +911,76 @@
                         languageCounts[lang] = (languageCounts[lang] || 0) + 1;
                     });
                 }
-                
+
                 // Count RE stages
                 if (dataset['RE stage'] && dataset['RE stage'].trim()) {
                     stageCounts[dataset['RE stage']] = (stageCounts[dataset['RE stage']] || 0) + 1;
                 }
-                
+
                 // Count licenses
                 if (dataset.License && dataset.License.trim()) {
                     licenseCounts[dataset.License] = (licenseCounts[dataset.License] || 0) + 1;
                 }
-                
+
                 // Count years
                 if (dataset.Year && dataset.Year.trim()) {
                     yearCounts[dataset.Year] = (yearCounts[dataset.Year] || 0) + 1;
                 }
-                
+
                 // Collect sizes
                 if (dataset.Size && dataset.Size.trim() && !isNaN(parseInt(dataset.Size))) {
                     sizes.push(parseInt(dataset.Size));
                 }
             });
-            
+
             // Get top domains
             const topDomains = Object.entries(domainCounts)
-                .sort(([,a], [,b]) => b - a)
+                .sort(([, a], [, b]) => b - a)
                 .slice(0, 3)
                 .map(([domain, count]) => ({ domain, count }));
-            
+
             // Get top tasks
             const topTasks = Object.entries(taskCounts)
-                .sort(([,a], [,b]) => b - a)
+                .sort(([, a], [, b]) => b - a)
                 .slice(0, 3)
                 .map(([task, count]) => ({ task, count }));
-            
+
             // Get top granularity levels
             const topGranularity = Object.entries(granularityCounts)
-                .sort(([,a], [,b]) => b - a)
+                .sort(([, a], [, b]) => b - a)
                 .slice(0, 2)
                 .map(([granularity, count]) => ({ granularity, count }));
-            
+
             // Get top RE stages
             const topStages = Object.entries(stageCounts)
-                .sort(([,a], [,b]) => b - a)
+                .sort(([, a], [, b]) => b - a)
                 .slice(0, 2)
                 .map(([stage, count]) => ({ stage, count }));
-            
+
             // Calculate language statistics
             const englishCount = languageCounts['en'] || 0;
             const englishPercentage = Math.round((englishCount / totalDatasets) * 100);
             const nonEnglishLanguages = Object.keys(languageCounts).filter(lang => lang !== 'en');
-            
+
             // Calculate open license percentage
-            const openLicenses = ['Creative Commons Attribution Share Alike 4.0 International', 
-                                 'GNU General Public License v3.0', 'Apache 2.0', 'MIT'];
+            const openLicenses = ['Creative Commons Attribution Share Alike 4.0 International',
+                'GNU General Public License v3.0', 'Apache 2.0', 'MIT'];
             const openLicenseCount = Object.entries(licenseCounts)
                 .filter(([license]) => openLicenses.some(open => license.includes(open)))
                 .reduce((sum, [, count]) => sum + count, 0);
             const openPercentage = Math.round((openLicenseCount / totalDatasets) * 100);
-            
+
             // Calculate temporal trends
             const currentYear = new Date().getFullYear();
             const recentYears = Object.keys(yearCounts)
                 .filter(year => parseInt(year) >= currentYear - 3)
                 .reduce((sum, year) => sum + yearCounts[year], 0);
             const recentPercentage = Math.round((recentYears / totalDatasets) * 100);
-            
+
             // Calculate size statistics
             const minSize = sizes.length > 0 ? Math.min(...sizes) : 0;
             const maxSize = sizes.length > 0 ? Math.max(...sizes) : 0;
-            
+
             return {
                 totalDatasets,
                 domainCount: Object.keys(domainCounts).length,
@@ -969,68 +1003,68 @@
         function updateInsightsSection(insights) {
             // Domain Coverage
             const domainText = insights.domainCount > 1 ? `${insights.domainCount} domains` : 'multiple domains';
-            const topDomainText = insights.topDomains.length > 0 
+            const topDomainText = insights.topDomains.length > 0
                 ? insights.topDomains.slice(0, 2).map(d => d.domain).join(' and ')
                 : 'various domains';
-            
+
             updateInsightElement('insight-domains', domainText);
             updateInsightElement('top-domain', topDomainText);
-            
+
             // Task Diversity
             const topTask = insights.topTasks[0];
             const taskText = topTask ? topTask.task : 'various tasks';
             const taskPercentage = topTask ? Math.round((topTask.count / insights.totalDatasets) * 100) : 0;
-            
+
             updateInsightElement('insight-tasks', taskText);
             updateInsightElement('classification-percentage', `${taskPercentage}%`);
-            
+
             // Data Granularity
-            const granularityText = Object.keys(insights.granularityCounts).length > 1 
-                ? 'multiple granularity levels' 
+            const granularityText = Object.keys(insights.granularityCounts).length > 1
+                ? 'multiple granularity levels'
                 : 'various granularity levels';
-            const topGranularityText = insights.topGranularity.length > 0 
+            const topGranularityText = insights.topGranularity.length > 0
                 ? insights.topGranularity[0].granularity.toLowerCase()
                 : 'document-level';
-            const secondGranularityText = insights.topGranularity.length > 1 
+            const secondGranularityText = insights.topGranularity.length > 1
                 ? insights.topGranularity[1].granularity.toLowerCase()
                 : 'sentence-level';
-            
+
             updateInsightElement('insight-granularity', granularityText);
             updateInsightElement('top-granularity', topGranularityText);
             updateInsightElement('second-granularity', secondGranularityText);
-            
+
             // Language Support
             const englishText = insights.englishPercentage > 50 ? 'English dominates' : 'English is prominent';
-            const multilingualText = insights.nonEnglishLanguages.length > 0 
-                ? 'multilingual datasets' 
+            const multilingualText = insights.nonEnglishLanguages.length > 0
+                ? 'multilingual datasets'
                 : 'other languages';
-            
+
             updateInsightElement('insight-english', englishText);
             updateInsightElement('english-percentage', `${insights.englishPercentage}%`);
             updateInsightElement('insight-multilingual', multilingualText);
-            
+
             // Size Distribution
             const minSizeText = insights.minSize > 0 ? `under ${Math.ceil(insights.minSize / 100) * 100} items` : 'small datasets';
             const maxSizeText = insights.maxSize > 0 ? `over ${Math.floor(insights.maxSize / 1000) * 1000} items` : 'large collections';
-            
+
             updateInsightElement('min-size', minSizeText);
             updateInsightElement('max-size', maxSizeText);
-            
+
             // Temporal Trends
             const trendText = insights.recentPercentage > 50 ? 'increasing activity' : 'steady growth';
-            
+
             updateInsightElement('insight-trend', trendText);
             updateInsightElement('recent-datasets', `${insights.recentPercentage}%`);
-            
+
             // RE Stage Coverage
             const stageText = Object.keys(insights.topStages).length > 1 ? 'all major RE stages' : 'various RE stages';
-            const topStageText = insights.topStages.length > 0 
+            const topStageText = insights.topStages.length > 0
                 ? insights.topStages[0].stage.toLowerCase()
                 : 'analysis and verification';
-            
+
             updateInsightElement('insight-stages', stageText);
             updateInsightElement('top-stage', topStageText);
-            
+
             // Openness
             updateInsightElement('open-percentage', `${insights.openPercentage}%`);
         }
@@ -1044,4 +1078,5 @@
         }
     </script>
 </body>
+
 </html>

@@ -69,17 +69,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadData();
         setupEventListeners();
         populateFilters();
-        
+
         // Check for dataset ID in URL path (e.g., /dataset-code)
         // This must be done after datasets are loaded
         handleInitialRoute();
-        
+
         // If showing listing view, load form state from URL parameters
         if (currentView === 'listing') {
             loadStateFromURL();
             renderDatasets();
         }
-        
+
         updateCounts();
         generateDynamicInsights(); // Add this line
     } catch (error) {
@@ -92,10 +92,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadData() {
     try {
         // Load datasets
-        const datasetsResponse = await fetch('data/datasets - datasets.csv');
+        const datasetsResponse = await fetch('data/datasets.csv');
         const datasetsText = await datasetsResponse.text();
         datasets = parseCSV(datasetsText);
-        
+
         // Load publications (optional - handle gracefully if file doesn't exist)
         try {
             const publicationsResponse = await fetch('data/publications - selection.csv');
@@ -110,10 +110,10 @@ async function loadData() {
             console.warn('Could not load publications file:', pubError);
             publications = [];
         }
-        
+
         // Initialize filtered datasets
         filteredDatasets = [...datasets];
-        
+
         console.log(`Loaded ${datasets.length} datasets and ${publications.length} publications`);
     } catch (error) {
         console.error('Error loading data:', error);
@@ -125,7 +125,7 @@ async function loadData() {
 function parseCSV(text) {
     const lines = text.trim().split('\n');
     const headers = lines[0].split(',').map(h => h.trim());
-    
+
     return lines.slice(1).map(line => {
         const values = parseCSVLine(line);
         const obj = {};
@@ -141,10 +141,10 @@ function parseCSVLine(line) {
     const result = [];
     let current = '';
     let inQuotes = false;
-    
+
     for (let i = 0; i < line.length; i++) {
         const char = line[i];
-        
+
         if (char === '"') {
             inQuotes = !inQuotes;
         } else if (char === ',' && !inQuotes) {
@@ -154,7 +154,7 @@ function parseCSVLine(line) {
             current += char;
         }
     }
-    
+
     result.push(current.trim());
     return result;
 }
@@ -166,7 +166,7 @@ function setupEventListeners() {
         handleSearch();
         updateURLFromForm();
     }, 300));
-    
+
     // Filter selects
     Object.values(elements.filters).forEach(filter => {
         if (filter) {
@@ -176,7 +176,7 @@ function setupEventListeners() {
             });
         }
     });
-    
+
     // Sort controls
     elements.sortSelect.addEventListener('change', () => {
         handleSort();
@@ -186,16 +186,16 @@ function setupEventListeners() {
         toggleSortDirection();
         updateURLFromForm();
     });
-    
+
     // Clear filters
     elements.clearFilters.addEventListener('click', () => {
         clearAllFilters();
         updateURLFromForm();
     });
-    
+
     // Back button
     elements.backBtn.addEventListener('click', showListingView);
-    
+
     // Navigation links
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
@@ -203,21 +203,21 @@ function setupEventListeners() {
             if (link.classList.contains('external-link')) {
                 return; // Allow default navigation behavior
             }
-            
+
             const view = link.dataset.view;
-            
+
             // Prevent default only for internal navigation
             e.preventDefault();
-            
+
             if (view === 'listing') {
                 showListingView();
             }
         });
     });
-    
+
     // Dataset grid clicks
     elements.datasetGrid.addEventListener('click', handleDatasetClick);
-    
+
     // Handle browser back/forward navigation
     window.addEventListener('popstate', handlePopState);
 }
@@ -249,7 +249,7 @@ function handleFilterChange() {
 // Apply all filters and search
 function applyFilters() {
     const searchQuery = elements.searchInput.value.toLowerCase().trim();
-    
+
     filteredDatasets = datasets.filter(dataset => {
         // Search filter
         if (searchQuery) {
@@ -260,12 +260,12 @@ function applyFilters() {
                 dataset.Task,
                 dataset.Labels
             ].join(' ').toLowerCase();
-            
+
             if (!searchableText.includes(searchQuery)) {
                 return false;
             }
         }
-        
+
         // Property filters
         const filters = {
             License: elements.filters.license.value,
@@ -277,16 +277,24 @@ function applyFilters() {
             Languages: elements.filters.language.value,
             Year: elements.filters.year.value
         };
-        
+
         for (const [key, value] of Object.entries(filters)) {
-            if (value && value.trim() !== '' && dataset[key] !== value) {
-                return false;
+            if (value && value.trim() !== '') {
+                // Handle comma-separated lists for Domain (and potentially Languages)
+                if (key === 'Domain') {
+                    const datasetValues = dataset[key].split(',').map(v => v.trim());
+                    if (!datasetValues.includes(value)) {
+                        return false;
+                    }
+                } else if (dataset[key] !== value) {
+                    return false;
+                }
             }
         }
-        
+
         return true;
     });
-    
+
     handleSort();
     renderDatasets();
     updateCounts();
@@ -296,10 +304,10 @@ function applyFilters() {
 function handleSort() {
     const sortBy = elements.sortSelect.value;
     const direction = elements.sortDirection.dataset.direction;
-    
+
     // Map sort options to CSV column names
     let csvColumn;
-    switch(sortBy) {
+    switch (sortBy) {
         case 'name':
             csvColumn = 'Name';
             break;
@@ -315,30 +323,30 @@ function handleSort() {
         default:
             csvColumn = 'Name';
     }
-    
+
     filteredDatasets.sort((a, b) => {
         let aVal = a[csvColumn] || '';
         let bVal = b[csvColumn] || '';
-        
+
         // Handle numeric sorting for size and year
         if (sortBy === 'size' || sortBy === 'year') {
             aVal = parseInt(aVal) || 0;
             bVal = parseInt(bVal) || 0;
         }
-        
+
         // Handle string comparison
         if (typeof aVal === 'string') {
             aVal = aVal.toLowerCase();
             bVal = bVal.toLowerCase();
         }
-        
+
         if (direction === 'asc') {
             return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
         } else {
             return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
         }
     });
-    
+
     renderDatasets();
 }
 
@@ -347,12 +355,12 @@ function handleSort() {
 function toggleSortDirection() {
     const currentDirection = elements.sortDirection.dataset.direction;
     const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
-    
+
     elements.sortDirection.dataset.direction = newDirection;
-    elements.sortDirection.innerHTML = newDirection === 'asc' 
+    elements.sortDirection.innerHTML = newDirection === 'asc'
         ? '<i class="fas fa-sort-amount-up"></i>'
         : '<i class="fas fa-sort-amount-down"></i>';
-    
+
     handleSort();
 }
 
@@ -367,7 +375,7 @@ function clearAllFilters() {
     elements.sortSelect.value = 'name';
     elements.sortDirection.dataset.direction = 'asc';
     elements.sortDirection.innerHTML = '<i class="fas fa-sort-amount-up"></i>';
-    
+
     applyFilters();
 }
 
@@ -383,22 +391,29 @@ function populateFilters() {
         Languages: new Set(),
         Year: new Set()
     };
-    
+
     // Collect unique values
     datasets.forEach(dataset => {
         Object.keys(filterOptions).forEach(key => {
             if (dataset[key] && dataset[key].trim()) {
-                filterOptions[key].add(dataset[key].trim());
+                if (key === 'Domain') {
+                    // Split comma-separated domains
+                    dataset[key].split(',').forEach(domain => {
+                        filterOptions[key].add(domain.trim());
+                    });
+                } else {
+                    filterOptions[key].add(dataset[key].trim());
+                }
             }
         });
     });
-    
+
     // Populate filter selects
     Object.entries(filterOptions).forEach(([key, values]) => {
         let filterElement;
-        
+
         // Map CSV column names to HTML element IDs
-        switch(key) {
+        switch (key) {
             case 'License':
                 filterElement = elements.filters.license;
                 break;
@@ -424,7 +439,7 @@ function populateFilters() {
                 filterElement = elements.filters.year;
                 break;
         }
-        
+
         if (filterElement) {
             const sortedValues = Array.from(values).sort();
             sortedValues.forEach(value => {
@@ -454,7 +469,7 @@ function renderDatasets() {
         `;
         return;
     }
-    
+
     elements.datasetGrid.innerHTML = filteredDatasets.map(dataset => createDatasetCard(dataset)).join('');
 }
 
@@ -462,7 +477,7 @@ function renderDatasets() {
 function createDatasetCard(dataset) {
     const labels = parseLabels(dataset.Labels);
     const extendsLinks = parseExtends(dataset.Extends);
-    
+
     return `
         <div class="dataset-card" data-code="${dataset.Code}">
             <div class="dataset-header">
@@ -480,7 +495,7 @@ function createDatasetCard(dataset) {
             
             <div class="dataset-meta">
                 ${dataset.License ? `<span class="meta-tag license"><i class="fas fa-certificate"></i> ${dataset.License}</span>` : ''}
-                ${dataset.Domain ? `<span class="meta-tag domain"><i class="fas fa-globe"></i> ${dataset.Domain}</span>` : ''}
+                ${dataset.Domain ? `<span class="meta-tag domain"><i class="fas fa-globe"></i> ${dataset.Domain.split(',').map(d => d.trim()).join(', ')}</span>` : ''}
                 ${dataset.Task ? `<span class="meta-tag task"><i class="fas fa-tasks"></i> ${dataset.Task}</span>` : ''}
                 ${dataset['Artifact type'] ? `<span class="meta-tag artifact"><i class="fas fa-file-alt"></i> ${dataset['Artifact type']}</span>` : ''}
                 ${dataset.Granularity ? `<span class="meta-tag granularity"><i class="fas fa-layer-group"></i> ${dataset.Granularity}</span>` : ''}
@@ -513,9 +528,9 @@ function parseLabels(labelsString) {
     if (!labelsString || labelsString.trim() === '' || labelsString === '-') {
         return [];
     }
-    
+
     // Split by semicolon first, then by comma
-    return labelsString.split(';').flatMap(group => 
+    return labelsString.split(';').flatMap(group =>
         group.split(',').map(label => label.trim()).filter(label => label)
     );
 }
@@ -525,20 +540,20 @@ function parseExtends(extendsString) {
     if (!extendsString || extendsString.trim() === '' || extendsString === '-') {
         return [];
     }
-    
+
     return extendsString.split(',').map(code => code.trim()).filter(code => code);
 }
 
 // Get full language name from code
 function getLanguageName(languageCode) {
     if (!languageCode) return '';
-    
+
     // Handle multiple languages separated by commas
     if (languageCode.includes(',')) {
         const codes = languageCode.split(',').map(code => code.trim());
         return codes.map(code => languageMapping[code] || code).join(', ');
     }
-    
+
     return languageMapping[languageCode] || languageCode;
 }
 
@@ -546,10 +561,10 @@ function getLanguageName(languageCode) {
 function handleDatasetClick(event) {
     const card = event.target.closest('.dataset-card');
     if (!card) return;
-    
+
     const datasetCode = card.dataset.code;
     const dataset = datasets.find(d => d.Code === datasetCode);
-    
+
     if (dataset) {
         showDatasetDetail(dataset, true); // true = update URL
     }
@@ -559,22 +574,22 @@ function handleDatasetClick(event) {
 function showDatasetDetail(dataset, updateURL = false) {
     // Scroll to top first
     window.scrollTo(0, 0);
-    
+
     currentDataset = dataset;
     currentView = 'detail';
-    
+
     elements.listingView.classList.remove('active');
     elements.detailView.classList.add('active');
-    
+
     elements.detailTitle.textContent = dataset.Name;
     elements.detailContent.innerHTML = createDatasetDetail(dataset);
-    
+
     // Update URL to show dataset ID
     if (updateURL) {
         // Get base path from current location
         const currentPath = window.location.pathname;
         let basePath = '';
-        
+
         // If we're on index.html, get its directory
         if (currentPath.includes('index.html')) {
             const pathSegments = currentPath.split('/').slice(0, -1);
@@ -587,12 +602,12 @@ function showDatasetDetail(dataset, updateURL = false) {
             // We're at root
             basePath = '/';
         }
-        
+
         // Ensure basePath ends with /
         if (!basePath.endsWith('/')) {
             basePath += '/';
         }
-        
+
         const newURL = basePath + dataset.Code;
         window.history.pushState({ view: 'detail', datasetCode: dataset.Code }, '', newURL);
     }
@@ -604,7 +619,7 @@ function createDatasetDetail(dataset) {
     const extendsLinks = parseExtends(dataset.Extends);
     const publicationIds = dataset.Publications ? dataset.Publications.split(',').map(id => id.trim()) : [];
     const relatedPublications = publications.filter(pub => publicationIds.includes(pub.ID));
-    
+
     return `
         <div class="detail-section">
             <h3>Basic Information</h3>
@@ -647,7 +662,7 @@ function createDatasetDetail(dataset) {
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Domain</div>
-                    <div class="detail-value">${dataset.Domain || 'Not specified'}</div>
+                    <div class="detail-value">${dataset.Domain ? dataset.Domain.split(',').map(d => d.trim()).join(', ') : 'Not specified'}</div>
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Languages</div>
@@ -732,13 +747,13 @@ function createDatasetDetail(dataset) {
 function showListingView(updateURL = true) {
     // Scroll to top first
     window.scrollTo(0, 0);
-    
+
     currentView = 'listing';
     currentDataset = null;
-    
+
     elements.detailView.classList.remove('active');
     elements.listingView.classList.add('active');
-    
+
     // Update URL to show base path with query parameters
     if (updateURL) {
         updateURLFromForm();
@@ -769,7 +784,7 @@ document.addEventListener('click', (event) => {
         event.preventDefault();
         const code = event.target.closest('.extends-link').dataset.code;
         const dataset = datasets.find(d => d.Code === code);
-        
+
         if (dataset) {
             showDatasetDetail(dataset, true); // true = update URL
         }
@@ -791,12 +806,12 @@ function getURLParams() {
 // Update URL with form state as query parameters
 function updateURLFromForm() {
     const params = new URLSearchParams();
-    
+
     // Add search query
     if (elements.searchInput.value.trim()) {
         params.set('search', elements.searchInput.value.trim());
     }
-    
+
     // Add filter values
     const filterMap = {
         'license': elements.filters.license.value,
@@ -808,13 +823,13 @@ function updateURLFromForm() {
         'language': elements.filters.language.value,
         'year': elements.filters.year.value
     };
-    
+
     Object.entries(filterMap).forEach(([key, value]) => {
         if (value && value.trim() !== '') {
             params.set(key, value);
         }
     });
-    
+
     // Add sort parameters
     if (elements.sortSelect.value !== 'name') {
         params.set('sort', elements.sortSelect.value);
@@ -822,11 +837,11 @@ function updateURLFromForm() {
     if (elements.sortDirection.dataset.direction !== 'asc') {
         params.set('sortDir', elements.sortDirection.dataset.direction);
     }
-    
+
     // Build new URL - get base path from current location
     const currentPath = window.location.pathname;
     let basePath = '';
-    
+
     // If we're on a dataset detail page (path ends with dataset code), go back to index.html
     const pathParts = currentPath.split('/').filter(part => part && part !== 'index.html' && part !== '');
     if (pathParts.length > 0) {
@@ -849,7 +864,7 @@ function updateURLFromForm() {
         // We're at root, use index.html
         basePath = 'index.html';
     }
-    
+
     // If basePath doesn't end with index.html and doesn't end with /, ensure it points to index.html
     if (!basePath.endsWith('index.html') && !basePath.endsWith('/')) {
         const pathSegments = basePath.split('/').slice(0, -1);
@@ -859,9 +874,9 @@ function updateURLFromForm() {
             basePath = 'index.html';
         }
     }
-    
+
     const newURL = basePath + (params.toString() ? `?${params.toString()}` : '');
-    
+
     // Update URL without reload
     window.history.pushState({ view: 'listing' }, '', newURL);
 }
@@ -869,12 +884,12 @@ function updateURLFromForm() {
 // Load form state from URL parameters
 function loadStateFromURL() {
     const params = getURLParams();
-    
+
     // Load search query
     if (params.search) {
         elements.searchInput.value = params.search;
     }
-    
+
     // Load filter values
     if (params.license) elements.filters.license.value = params.license;
     if (params.artifact) elements.filters.artifact.value = params.artifact;
@@ -884,16 +899,16 @@ function loadStateFromURL() {
     if (params.domain) elements.filters.domain.value = params.domain;
     if (params.language) elements.filters.language.value = params.language;
     if (params.year) elements.filters.year.value = params.year;
-    
+
     // Load sort parameters
     if (params.sort) elements.sortSelect.value = params.sort;
     if (params.sortDir) {
         elements.sortDirection.dataset.direction = params.sortDir;
-        elements.sortDirection.innerHTML = params.sortDir === 'asc' 
+        elements.sortDirection.innerHTML = params.sortDir === 'asc'
             ? '<i class="fas fa-sort-amount-up"></i>'
             : '<i class="fas fa-sort-amount-down"></i>';
     }
-    
+
     // Apply filters after loading
     applyFilters();
 }
@@ -905,16 +920,16 @@ function handleInitialRoute() {
     const stored404Path = sessionStorage.getItem('404-path');
     const path = stored404Path || window.location.pathname;
     const pathParts = path.split('/').filter(part => part && part !== 'index.html' && part !== '');
-    
+
     // Clear the stored path if it was set
     if (stored404Path) {
         sessionStorage.removeItem('404-path');
     }
-    
+
     // Check if there's a dataset code in the path
     if (pathParts.length > 0) {
         const datasetCode = pathParts[pathParts.length - 1];
-        
+
         // Check if it's a valid dataset code (not a file extension and not a known file)
         const knownFiles = ['dashboard.html', 'styles.css', 'script.js', '404.html'];
         if (datasetCode && !datasetCode.includes('.') && !knownFiles.includes(datasetCode)) {
@@ -922,7 +937,7 @@ function handleInitialRoute() {
             if (dataset) {
                 // Show dataset detail view
                 showDatasetDetail(dataset, !stored404Path); // Update URL unless coming from 404
-                
+
                 // If coming from 404, update URL using replaceState to avoid adding history entry
                 if (stored404Path) {
                     const currentPath = window.location.pathname;
@@ -946,7 +961,7 @@ function handleInitialRoute() {
             }
         }
     }
-    
+
     // If no dataset found, show listing view
     showListingView(false); // false = don't update URL yet (will be updated by loadStateFromURL)
 }
@@ -956,10 +971,10 @@ function handlePopState(event) {
     // Check if there's a dataset code in the current path
     const path = window.location.pathname;
     const pathParts = path.split('/').filter(part => part && part !== 'index.html' && part !== '');
-    
+
     if (pathParts.length > 0) {
         const datasetCode = pathParts[pathParts.length - 1];
-        
+
         // Check if it's a valid dataset code (not a file extension and not a known file)
         const knownFiles = ['dashboard.html', 'styles.css', 'script.js'];
         if (datasetCode && !datasetCode.includes('.') && !knownFiles.includes(datasetCode)) {
@@ -970,7 +985,7 @@ function handlePopState(event) {
             }
         }
     }
-    
+
     // Otherwise show listing view and load form state from URL
     showListingView(false); // false = don't update URL
     loadStateFromURL();
@@ -1013,7 +1028,7 @@ document.head.appendChild(styleSheet);
 // Generate dynamic insights based on actual data
 function generateDynamicInsights() {
     if (!datasets || datasets.length === 0) return;
-    
+
     const insights = analyzeData();
     updateInsightsSection(insights);
 }
@@ -1021,7 +1036,7 @@ function generateDynamicInsights() {
 // Analyze the dataset to generate insights
 function analyzeData() {
     const totalDatasets = datasets.length;
-    
+
     // Domain analysis
     const domainCounts = {};
     const taskCounts = {};
@@ -1031,23 +1046,23 @@ function analyzeData() {
     const licenseCounts = {};
     const yearCounts = {};
     const sizes = [];
-    
+
     datasets.forEach(dataset => {
         // Count domains
         if (dataset.Domain && dataset.Domain.trim()) {
             domainCounts[dataset.Domain] = (domainCounts[dataset.Domain] || 0) + 1;
         }
-        
+
         // Count tasks
         if (dataset.Task && dataset.Task.trim()) {
             taskCounts[dataset.Task] = (taskCounts[dataset.Task] || 0) + 1;
         }
-        
+
         // Count granularity
         if (dataset.Granularity && dataset.Granularity.trim()) {
             granularityCounts[dataset.Granularity] = (granularityCounts[dataset.Granularity] || 0) + 1;
         }
-        
+
         // Count languages
         if (dataset.Languages && dataset.Languages.trim()) {
             const languages = dataset.Languages.split(',').map(lang => lang.trim());
@@ -1055,76 +1070,76 @@ function analyzeData() {
                 languageCounts[lang] = (languageCounts[lang] || 0) + 1;
             });
         }
-        
+
         // Count RE stages
         if (dataset['RE stage'] && dataset['RE stage'].trim()) {
             stageCounts[dataset['RE stage']] = (stageCounts[dataset['RE stage']] || 0) + 1;
         }
-        
+
         // Count licenses
         if (dataset.License && dataset.License.trim()) {
             licenseCounts[dataset.License] = (licenseCounts[dataset.License] || 0) + 1;
         }
-        
+
         // Count years
         if (dataset.Year && dataset.Year.trim()) {
             yearCounts[dataset.Year] = (yearCounts[dataset.Year] || 0) + 1;
         }
-        
+
         // Collect sizes
         if (dataset.Size && dataset.Size.trim() && !isNaN(parseInt(dataset.Size))) {
             sizes.push(parseInt(dataset.Size));
         }
     });
-    
+
     // Get top domains
     const topDomains = Object.entries(domainCounts)
-        .sort(([,a], [,b]) => b - a)
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 3)
         .map(([domain, count]) => ({ domain, count }));
-    
+
     // Get top tasks
     const topTasks = Object.entries(taskCounts)
-        .sort(([,a], [,b]) => b - a)
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 3)
         .map(([task, count]) => ({ task, count }));
-    
+
     // Get top granularity levels
     const topGranularity = Object.entries(granularityCounts)
-        .sort(([,a], [,b]) => b - a)
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 2)
         .map(([granularity, count]) => ({ granularity, count }));
-    
+
     // Get top RE stages
     const topStages = Object.entries(stageCounts)
-        .sort(([,a], [,b]) => b - a)
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 2)
         .map(([stage, count]) => ({ stage, count }));
-    
+
     // Calculate language statistics
     const englishCount = languageCounts['en'] || 0;
     const englishPercentage = Math.round((englishCount / totalDatasets) * 100);
     const nonEnglishLanguages = Object.keys(languageCounts).filter(lang => lang !== 'en');
-    
+
     // Calculate open license percentage
-    const openLicenses = ['Creative Commons Attribution Share Alike 4.0 International', 
-                         'GNU General Public License v3.0', 'Apache 2.0', 'MIT'];
+    const openLicenses = ['Creative Commons Attribution Share Alike 4.0 International',
+        'GNU General Public License v3.0', 'Apache 2.0', 'MIT'];
     const openLicenseCount = Object.entries(licenseCounts)
         .filter(([license]) => openLicenses.some(open => license.includes(open)))
         .reduce((sum, [, count]) => sum + count, 0);
     const openPercentage = Math.round((openLicenseCount / totalDatasets) * 100);
-    
+
     // Calculate temporal trends
     const currentYear = new Date().getFullYear();
     const recentYears = Object.keys(yearCounts)
         .filter(year => parseInt(year) >= currentYear - 3)
         .reduce((sum, year) => sum + yearCounts[year], 0);
     const recentPercentage = Math.round((recentYears / totalDatasets) * 100);
-    
+
     // Calculate size statistics
     const minSize = sizes.length > 0 ? Math.min(...sizes) : 0;
     const maxSize = sizes.length > 0 ? Math.max(...sizes) : 0;
-    
+
     return {
         totalDatasets,
         domainCount: Object.keys(domainCounts).length,
@@ -1147,68 +1162,68 @@ function analyzeData() {
 function updateInsightsSection(insights) {
     // Domain Coverage
     const domainText = insights.domainCount > 1 ? `${insights.domainCount} domains` : 'multiple domains';
-    const topDomainText = insights.topDomains.length > 0 
+    const topDomainText = insights.topDomains.length > 0
         ? insights.topDomains.slice(0, 2).map(d => d.domain).join(' and ')
         : 'various domains';
-    
+
     updateInsightElement('insight-domains', domainText);
     updateInsightElement('top-domain', topDomainText);
-    
+
     // Task Diversity
     const topTask = insights.topTasks[0];
     const taskText = topTask ? topTask.task : 'various tasks';
     const taskPercentage = topTask ? Math.round((topTask.count / insights.totalDatasets) * 100) : 0;
-    
+
     updateInsightElement('insight-tasks', taskText);
     updateInsightElement('classification-percentage', `${taskPercentage}%`);
-    
+
     // Data Granularity
-    const granularityText = Object.keys(insights.granularityCounts).length > 1 
-        ? 'multiple granularity levels' 
+    const granularityText = Object.keys(insights.granularityCounts).length > 1
+        ? 'multiple granularity levels'
         : 'various granularity levels';
-    const topGranularityText = insights.topGranularity.length > 0 
+    const topGranularityText = insights.topGranularity.length > 0
         ? insights.topGranularity[0].granularity.toLowerCase()
         : 'document-level';
-    const secondGranularityText = insights.topGranularity.length > 1 
+    const secondGranularityText = insights.topGranularity.length > 1
         ? insights.topGranularity[1].granularity.toLowerCase()
         : 'sentence-level';
-    
+
     updateInsightElement('insight-granularity', granularityText);
     updateInsightElement('top-granularity', topGranularityText);
     updateInsightElement('second-granularity', secondGranularityText);
-    
+
     // Language Support
     const englishText = insights.englishPercentage > 50 ? 'English dominates' : 'English is prominent';
-    const multilingualText = insights.nonEnglishLanguages.length > 0 
-        ? 'multilingual datasets' 
+    const multilingualText = insights.nonEnglishLanguages.length > 0
+        ? 'multilingual datasets'
         : 'other languages';
-    
+
     updateInsightElement('insight-english', englishText);
     updateInsightElement('english-percentage', `${insights.englishPercentage}%`);
     updateInsightElement('insight-multilingual', multilingualText);
-    
+
     // Size Distribution
     const minSizeText = insights.minSize > 0 ? `under ${Math.ceil(insights.minSize / 100) * 100} items` : 'small datasets';
     const maxSizeText = insights.maxSize > 0 ? `over ${Math.floor(insights.maxSize / 1000) * 1000} items` : 'large collections';
-    
+
     updateInsightElement('min-size', minSizeText);
     updateInsightElement('max-size', maxSizeText);
-    
+
     // Temporal Trends
     const trendText = insights.recentPercentage > 50 ? 'increasing activity' : 'steady growth';
-    
+
     updateInsightElement('insight-trend', trendText);
     updateInsightElement('recent-datasets', `${insights.recentPercentage}%`);
-    
+
     // RE Stage Coverage
     const stageText = Object.keys(insights.topStages).length > 1 ? 'all major RE stages' : 'various RE stages';
-    const topStageText = insights.topStages.length > 0 
+    const topStageText = insights.topStages.length > 0
         ? insights.topStages[0].stage.toLowerCase()
         : 'analysis and verification';
-    
+
     updateInsightElement('insight-stages', stageText);
     updateInsightElement('top-stage', topStageText);
-    
+
     // Openness
     updateInsightElement('open-percentage', `${insights.openPercentage}%`);
 }
