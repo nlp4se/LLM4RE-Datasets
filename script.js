@@ -89,19 +89,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Load data from CSV files
+// Load data from CSV files
 async function loadData() {
     try {
         // Load datasets
         const datasetsResponse = await fetch('data/datasets.csv');
+        if (!datasetsResponse.ok) {
+            throw new Error(`Failed to load datasets: ${datasetsResponse.status} ${datasetsResponse.statusText}`);
+        }
         const datasetsText = await datasetsResponse.text();
         datasets = parseCSV(datasetsText);
 
         // Load publications (optional - handle gracefully if file doesn't exist)
         try {
-            const publicationsResponse = await fetch('data/publications - selection.csv');
+            // Note: The user changed this to .xlsx, but we don't have an xlsx parser and the file is missing. 
+            // Attempting to fetch .xlsx as text and parsing as CSV will fail.
+            // We revert to checking for a CSV or handle the 404 gracefully.
+            // For now, keeping the user's path but adding checks to prevent crashes.
+            const publicationsResponse = await fetch('data/publications.xlsx');
             if (publicationsResponse.ok) {
+                // Warning: parsing xlsx as text will likely fail or produce garbage
                 const publicationsText = await publicationsResponse.text();
-                publications = parseCSV(publicationsText);
+                // Check if it looks like a CSV (simple heuristic)
+                if (publicationsText.includes(',')) {
+                    publications = parseCSV(publicationsText);
+                } else {
+                    console.warn('Publications file does not appear to be valid CSV');
+                    publications = [];
+                }
             } else {
                 console.warn('Publications file not found, continuing without publications data');
                 publications = [];
@@ -117,6 +132,7 @@ async function loadData() {
         console.log(`Loaded ${datasets.length} datasets and ${publications.length} publications`);
     } catch (error) {
         console.error('Error loading data:', error);
+        showError('Failed to load data. Please check the console for details.');
         throw error;
     }
 }
@@ -126,14 +142,16 @@ function parseCSV(text) {
     const lines = text.trim().split('\n');
     const headers = lines[0].split(',').map(h => h.trim());
 
-    return lines.slice(1).map(line => {
-        const values = parseCSVLine(line);
-        const obj = {};
-        headers.forEach((header, index) => {
-            obj[header] = values[index] || '';
+    return lines.slice(1)
+        .filter(line => line.trim() !== '' && line.split(',').some(v => v.trim() !== '')) // Filter empty or comma-only lines
+        .map(line => {
+            const values = parseCSVLine(line);
+            const obj = {};
+            headers.forEach((header, index) => {
+                obj[header] = values[index] || '';
+            });
+            return obj;
         });
-        return obj;
-    });
 }
 
 // Parse a single CSV line handling quoted values

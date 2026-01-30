@@ -326,11 +326,26 @@
             }
         });
 
-        // Load data from CSV
+        // Load data from CSV files
         async function loadData() {
-            const response = await fetch('data/datasets.csv');
-            const text = await response.text();
-            datasets = parseCSV(text);
+            try {
+                const response = await fetch('data/datasets.csv');
+                if (!response.ok) {
+                    throw new Error(`Failed to load datasets: ${response.status} ${response.statusText}`);
+                }
+                const text = await response.text();
+                datasets = parseCSV(text);
+                console.log(`Loaded ${datasets.length} datasets for dashboard`);
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                document.querySelector('.dashboard-container').innerHTML = `
+                    <div style="text-align: center; padding: 50px; color: #e74c3c;">
+                        <h2>Error Loading Dashboard</h2>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+                throw error;
+            }
         }
 
         // Parse CSV data
@@ -338,14 +353,16 @@
             const lines = text.trim().split('\n');
             const headers = lines[0].split(',').map(h => h.trim());
 
-            return lines.slice(1).map(line => {
-                const values = parseCSVLine(line);
-                const obj = {};
-                headers.forEach((header, index) => {
-                    obj[header] = values[index] || '';
+            return lines.slice(1)
+                .filter(line => line.trim() !== '' && line.split(',').some(v => v.trim() !== '')) // Filter empty or comma-only lines
+                .map(line => {
+                    const values = parseCSVLine(line);
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                        obj[header] = values[index] || '';
+                    });
+                    return obj;
                 });
-                return obj;
-            });
         }
 
         // Parse CSV line handling quoted values
