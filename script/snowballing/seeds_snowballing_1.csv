@@ -1,0 +1,46 @@
+Title	DOI
+Classification of quality characteristics in online user feedback using linguistic analysis, crowdsourcing and LLMs	10.1016/j.jss.2025.112533
+PassionNet: An innovative framework for duplicate and conflicting requirements identification	10.1016/j.eswa.2025.128684
+Evaluating Large Language Models for Requirements Question Answering in Industrial Aerospace Software	10.1145/3696630.3728560
+Leveraging machines to derive domain models from user stories	10.1007/s00766-025-00442-9
+Mining user privacy concern topics from app reviews	10.1016/j.jss.2025.112355
+Automated Identification and Representation of System Requirements Based on Large Language Models and Knowledge Graphs	10.3390/app15073502
+Enhancing Software Sustainability: Leveraging Large Language Models to Evaluate Security Requirements Fulfillment in Requirements Engineering	10.3390/systems13020114
+Leveraging Large Language Model ChatGPT for enhanced understanding of end-user emotions in social media feedbacks	10.1016/j.eswa.2024.125524
+Intelligent extraction of manufacturing system components from natural language using transformer models	10.1080/00207543.2025.2554311
+LERE: A Method Based on LLMs and Enhanced EARS in Requirements Engineering	10.1109/ICOSSE65712.2025.00022
+Text Classification on Software and Hardware Requirements Using Natural Language Processing Techniques	10.1109/SACI66288.2025.11030133
+Functional and Non-functional Requirements Classification: A Comparative Evaluation of Pre-trained LLMs and ML Techniques	10.1109/ComTech65062.2025.11034464
+From Inductive to Deductive: LLMs-Based Qualitative Data Analysis in Requirements Engineering	https://ceur-ws.org/Vol-3959/NLP4RE-paper2.pdf
+Evaluating the Capabilities of LLMs in Traceability Maintenance for Automotive System and Software Requirements	https://ceur-ws.org/Vol-3959/NLP4RE-short2.pdf
+Synthline: A Product Line Approach for Synthetic Requirements Engineering Data Generation Using Large Language Models	10.1007/978-3-031-92474-3_13
+Software Requirements Classification: From Bag-of-Words to Transformer	10.1007/978-3-031-76459-2_35
+Cross-Level Requirements Tracing Based on Large Language Models	10.1109/TSE.2025.3572094
+Dealing with Data for RE: Mitigating Challenges While Using NLP and Generative AI	10.1007/978-3-031-73143-17
+Legal Requirements Analysis: A Regulatory Compliance Perspective	10.1007/978-3-031-73143-3_8
+Characteristics and Desiderata for Competency Question Benchmarks	https://ceur-ws.org/Vol-3953/369.pdf
+Requirements Traceability Link Recovery via Retrieval-Augmented Generation	10.1007/978-3-031-88531-0_27
+Generating domain models from natural language text using NLP: a benchmark dataset and experimental comparison of tools	10.1007/s10270-024-01176-y
+Automated requirement contradiction detection through formal logic and LLMs	10.1007/s10515-024-00452-x
+Emergence of A Novel Domain Expert: A Generative AI-based Framework for Software Function Point Analysis	10.1145/3691620.3695293
+Graph Neural Network vs. Large Language Model: A Comparative Analysis for Bug Report Priority and Severity Prediction	10.1145/3663533.3664042
+A Multi-solution Study on GDPR AI-enabled Completeness Checking of DPAs	10.1007/s10664-024-10491-3
+Probing with Precision: Probing Question Generation for Architectural Information Elicitation	10.1145/3643666.3648577
+Improving requirements completeness: automated assistance through large language models	10.1007/s00766-024-00416-3
+Anaphora Resolution in Software Requirements Engineering: A Comparison of Generative NLP Pipelines and Encoder-Based Models	10.1109/CASCON62161.2024.10837905
+Translating Requirements in Property Specification Patterns using LLMs	https://ceur-ws.org/Vol-3883/paper6_RCRA5.pdf
+The Application of LLMs in the Analysis and Modeling of Software Requirements	10.1109/QRS-C63300.2024.00151
+Learning from Failures: Translation of Natural Language Requirements into Linear Temporal Logic with Large Language Models	10.1109/QRS62785.2024.00029
+Evaluating OpenAI Large Language Models for Generating Logical Abstractions of Technical Requirements Documents	10.1109/QRS62785.2024.00032
+Interlinking User Stories and GUI Prototyping: A Semi-Automatic LLM-Based Approach	10.1109/RE59067.2024.00045
+Utilizing Process Models in the Requirements Engineering Process Through Model2Text Transformation	10.1109/RE59067.2024.00028
+Deriving Domain Models From User Stories: Human vs. Machines	10.1109/RE59067.2024.00014
+Supporting High-Level to Low-Level Requirements Coverage Reviewing with Large Language Models	10.1145/3643991.3644922
+NLP4ReF: Requirements Classification and Forecasting: From Model-Based Design to Large Language Models	10.1109/AERO58975.2024.10521022
+Which AI Technique Is Better to Classify Requirements? An Experiment with SVM, LSTM, and ChatGPT	https://ceur-ws.org/Vol-3672/NLP4RE-paper2.pdf
+T-FREX: A Transformer-based Feature Extraction Method from Mobile App Reviews	10.1109/SANER60148.2024.00030
+Zero-shot Bilingual App Reviews Mining with Large Language Models	10.1109/ICTAI59109.2023.00135
+Extracting Domain Models from Textual Requirements in the Era of Large Language Models	10.1109/MODELS-C59198.2023.00096
+Comparing general purpose pre-trained Word and Sentence embeddings for Requirements Classification	https://ceur-ws.org/Vol-3378/NLP4RE-paper4.pdf
+AI-Driven User Story Generation	10.1109/ACDSA59508.2024.10467677
+Rethinking Technological Investment and Cost-Benefit: A Software Requirements Dependency Extraction Case Study	10.1109/ACCESS.2025.3556313
