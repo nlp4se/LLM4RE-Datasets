@@ -296,20 +296,36 @@ function applyFilters() {
             Year: elements.filters.year.value
         };
 
-        for (const [key, value] of Object.entries(filters)) {
-            if (value && value.trim() !== '') {
+     //   for (const [key, value] of Object.entries(filters)) {
+       //     if (value && value.trim() !== '') {
                 // Handle comma-separated lists for Domain (and potentially Languages)
-                if (key === 'Domain') {
-                    const datasetValues = dataset[key].split(',').map(v => v.trim());
-                    if (!datasetValues.includes(value)) {
-                        return false;
-                    }
-                } else if (dataset[key] !== value) {
-                    return false;
-                }
+          //      if (key === 'Domain') {
+           //         const datasetValues = dataset[key].split(',').map(v => v.trim());
+             //       if (!datasetValues.includes(value)) {
+              //          return false;
+              //      }
+             //   } else if (dataset[key] !== value) {
+             //       return false;
+            //    }
+           // }
+      //  }
+for (const [key, value] of Object.entries(filters)) {
+    if (value && value.trim() !== '') {
+        if (key === 'Domain') {
+            const datasetValues = (dataset[key] || '').split(',').map(v => v.trim());
+            if (!datasetValues.includes(value)) {
+                return false;
             }
+        } else if (key === 'Languages') {
+            const datasetLanguages = normalizeLanguages(dataset[key]);
+            if (!datasetLanguages.includes(value)) {
+                return false;
+            }
+        } else if (dataset[key] !== value) {
+            return false;
         }
-
+    }
+}
         return true;
     });
 
@@ -411,20 +427,41 @@ function populateFilters() {
     };
 
     // Collect unique values
-    datasets.forEach(dataset => {
-        Object.keys(filterOptions).forEach(key => {
-            if (dataset[key] && dataset[key].trim()) {
-                if (key === 'Domain') {
+  //  datasets.forEach(dataset => {
+    //    Object.keys(filterOptions).forEach(key => {
+      //      if (dataset[key] && dataset[key].trim()) {
+       //         if (key === 'Domain') {
                     // Split comma-separated domains
-                    dataset[key].split(',').forEach(domain => {
-                        filterOptions[key].add(domain.trim());
-                    });
-                } else {
-                    filterOptions[key].add(dataset[key].trim());
-                }
+           //         dataset[key].split(',').forEach(domain => {
+             //           filterOptions[key].add(domain.trim());
+           //         });
+            //    } else {
+            //        filterOptions[key].add(dataset[key].trim());
+          //      }
+        //    }
+     //   });
+  //  });
+
+    datasets.forEach(dataset => {
+    Object.keys(filterOptions).forEach(key => {
+        if (dataset[key] && dataset[key].trim()) {
+            if (key === 'Domain') {
+                dataset[key].split(',').forEach(domain => {
+                    const cleanedDomain = domain.trim();
+                    if (cleanedDomain) {
+                        filterOptions[key].add(cleanedDomain);
+                    }
+                });
+            } else if (key === 'Languages') {
+                normalizeLanguages(dataset[key]).forEach(language => {
+                    filterOptions[key].add(language);
+                });
+            } else {
+                filterOptions[key].add(dataset[key].trim());
             }
-        });
+        }
     });
+});
 
     // Populate filter selects
     Object.entries(filterOptions).forEach(([key, values]) => {
@@ -562,19 +599,40 @@ function parseExtends(extendsString) {
     return extendsString.split(',').map(code => code.trim()).filter(code => code);
 }
 
+function normalizeLanguages(value) {
+    if (!value || value.trim() === '' || value.trim() === '-') {
+        return [];
+    }
+
+    return value
+        .split(',')
+        .map(lang => lang.trim())
+        .filter(Boolean);
+}
 // Get full language name from code
+//function getLanguageName(languageCode) {
+//    if (!languageCode) return '';
+
+    // Handle multiple languages separated by commas
+ //   if (languageCode.includes(',')) {
+ //       const codes = languageCode.split(',').map(code => code.trim());
+  //      return codes.map(code => languageMapping[code] || code).join(', ');
+  //  }
+
+ //   return languageMapping[languageCode] || languageCode;
+//}
 function getLanguageName(languageCode) {
     if (!languageCode) return '';
 
-    // Handle multiple languages separated by commas
-    if (languageCode.includes(',')) {
-        const codes = languageCode.split(',').map(code => code.trim());
+    const codes = normalizeLanguages(languageCode);
+    if (codes.length === 0) return '';
+
+    if (codes.length > 1) {
         return codes.map(code => languageMapping[code] || code).join(', ');
     }
 
-    return languageMapping[languageCode] || languageCode;
+    return languageMapping[codes[0]] || codes[0];
 }
-
 // Handle dataset card clicks
 function handleDatasetClick(event) {
     const card = event.target.closest('.dataset-card');
